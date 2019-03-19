@@ -1,0 +1,30 @@
+[submodule "lib/Adafruit_ADS1X15"]
+	path = lib/Adafruit_ADS1X15
+	url = git@github.com:soligen2010/Adafruit_ADS1X15.git
+[submodule "lib/Adafruit_BNO055"]
+	path = lib/Adafruit_BNO055
+	url = git@github.com:adafruit/Adafruit_BNO055.git
+[submodule "lib/Adafruit_MMA8451_Library"]
+	path = lib/Adafruit_MMA8451_Library
+	url = git@github.com:eringerli/Adafruit_MMA8451_Library.git
+[submodule "ArduinoJson.git"]
+	path = lib/ArduinoJson
+	url = https://github.com/bblanchon/ArduinoJson.git
+[submodule "lib/AutoPID"]
+	path = lib/AutoPID
+	url = git@github.com:eringerli/AutoPID.git
+[submodule "lib/eeprom32_rotate"]
+	path = lib/eeprom32_rotate
+	url = https://github.com/xoseperez/eeprom32_rotate.git
+[submodule "lib/ESPAsyncWebServer"]
+	path = lib/ESPAsyncWebServer
+	url = git@github.com:me-no-dev/ESPAsyncWebServer.git
+[submodule "lib/ESPUI"]
+	path = lib/ESPUI
+	url = git@github.com:eringerli/ESPUI.git
+[submodule "lib/MicroNMEA"]
+	path = lib/MicroNMEA
+	url = git@github.com:eringerli/MicroNMEA.git
+[submodule "tools/EspArduinoExceptionDecoder"]
+	path = tools/EspArduinoExceptionDecoder
+	url = git@github.com:me21/EspArduinoExceptionDecoder.git
