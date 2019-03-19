@@ -1,0 +1,9 @@
+#/bin/bash
+
+pushd /home/christian/Documents/PlatformIO/Projects/esp32-aog/
+
+cat > dump;
+
+ ./tools/EspArduinoExceptionDecoder/decoder.py -p ESP32 -t ~/.platformio/packages/toolchain-xtensa32/ -e .pioenvs/featheresp32/firmware.elf dump
+
+popd
