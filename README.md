@@ -1,6 +1,9 @@
 # esp32-aog
 Software to control the tractor from AgOpenGPS
 
+# WARNING
+Read this file through, before starting to half-ass it. It is not so hard to install a working system, just give it enough time and install it in this order.
+
 # Install Prerequisites
 1. install atom: https://atom.io/
 1. inside atom:
@@ -35,5 +38,7 @@ Software to control the tractor from AgOpenGPS
       #define I2C_BUFFER_LENGTH 128
     #endif
     ```
-    This is for the readout of the FIFO of the MMA8252, as it reads more than 192Bytes a time. if it is not changed, the code won't work and crashes!
-    
+    This is for the readout of the FIFO of the MMA8252, as it reads more than 192Bytes a time. If it is not changed, the code won't work and crashes!
+1. if that was to fast for you (I warned you in the start!), trigger a recompile with adding a space to somewhere in `autosteer.cpp`. The warning apears again.
+1. save the file and close it
+1. build again
