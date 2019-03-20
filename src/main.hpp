@@ -137,7 +137,7 @@ struct SteerConfig {
   SteerConfig::Gpio gpioWheelencoderA = SteerConfig::Gpio::None;
   SteerConfig::Gpio gpioWheelencoderB = SteerConfig::Gpio::None;
 
-  uint8_t pulseCountMax = 3;
+  uint8_t wheelEncoderPulseCountMax = 3;
 
   enum class ImuType : uint8_t {
     None = 0,

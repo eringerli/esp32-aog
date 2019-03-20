@@ -569,9 +569,9 @@ void setup( void ) {
       addGpioOutput( sel );
     }
 
-    ESPUI.addControl( ControlType::Number, "Steering Wheel Encoder max Counts", String( steerConfig.pulseCountMax ), ControlColor::Peterriver, tab,
+    ESPUI.addControl( ControlType::Number, "Steering Wheel Encoder max Counts", String( steerConfig.wheelEncoderPulseCountMax ), ControlColor::Peterriver, tab,
     []( Control * control, int id ) {
-      steerConfig.pulseCountMax = control->value.toInt();
+      steerConfig.wheelEncoderPulseCountMax = control->value.toInt();
     } );
   }
 

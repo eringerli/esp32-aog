@@ -456,6 +456,12 @@ void initAutosteer() {
 //     initialisation.outputType = steerConfig.outputType;
   }
 
+  if ( steerConfig.gpioWheelencoderA != SteerConfig::Gpio::None &&
+       steerConfig.gpioWheelencoderB != SteerConfig::Gpio::None ) {
+    encoder.setCount( 0 );
+    encoder.attachHalfQuad( ( uint8_t )steerConfig.gpioWheelencoderA, ( uint8_t )steerConfig.gpioWheelencoderB );
+  }
+
   // 10ms -> 100Hz
   pid.setTimeStep( 10 );
 //   if ( initialisation.outputType != SteerConfig::OutputType::None ) {
