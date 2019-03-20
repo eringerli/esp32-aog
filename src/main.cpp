@@ -200,12 +200,14 @@ void setup( void ) {
   labelRoll       = ESPUI.addControl( ControlType::Label, "Roll:", "0°", ControlColor::Emerald );
   labelWheelAngle = ESPUI.addControl( ControlType::Label, "Wheel Angle:", "0°", ControlColor::Emerald );
 
+  buttonReset = ESPUI.addControl( ControlType::Button, "Store the Settings", "Apply", ControlColor::Emerald, Control::noParent,
+  []( Control * control, int id ) {
+    writeEeprom();
+  } );
+  
   buttonReset = ESPUI.addControl( ControlType::Button, "If this turn red, you have to", "Apply & Reset", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
-    EEPROM.writeByte( ( uint16_t )EepromAddresses::Validator, 0 );
-    EEPROM.put( ( uint16_t )EepromAddresses::SteerSettings, steerConfig );
-//     EEPROM.dump( Serial );
-    EEPROM.commit();
+    writeEeprom();
     ESP.restart();
   } );
 
