@@ -139,8 +139,6 @@ struct SteerConfig {
 
   uint8_t pulseCountMax = 3;
 
-
-
   enum class ImuType : uint8_t {
     None = 0,
     BNO055 = 1
@@ -162,7 +160,14 @@ struct SteerConfig {
     tcp
   } rtkCorrectionType = RtkCorrectionType::None;
 
-  char rtkCorrectionURL[120] = "http://gps:eringer@192.168.11.63:2101/STALL";
+  char rtkCorrectionServer[48] = "192.168.11.63";
+  uint16_t rtkCorrectionPort = 2101;
+  char rtkCorrectionUsername[24] = "gps";
+  char rtkCorrectionPassword[24] = "eringer";
+  char rtkCorrectionMountpoint[24] = "STALL";
+  char rtkCorrectionMountpoint2[24] = "STALL";
+
+//   char rtkCorrectionURL[120] = "http://gps:eringer@192.168.11.63:2101/STALL";
   char rtkCorrectionNmeaToSend[120] = "";
 
   uint32_t rtkCorrectionBaudrate = 38400;
@@ -197,6 +202,8 @@ struct Initialisation {
   uint16_t portSendFrom = 5577;
   uint16_t portListenTo = 8888;
   uint16_t portSendTo = 9999;
+
+  String rtkCorrectionURL = "";
 };
 extern Initialisation initialisation;
 

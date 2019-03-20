@@ -576,11 +576,35 @@ void setup( void ) {
 //       ESPUI.addControl( ControlType::Option, "TCP", "3", ControlColor::Alizarin, sel );
     }
 
-    ESPUI.addControl( ControlType::Text, "URL*", String( steerConfig.rtkCorrectionURL ), ControlColor::Wetasphalt, tab,
+    ESPUI.addControl( ControlType::Text, "Server*", String( steerConfig.rtkCorrectionServer ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
-      control->value.toCharArray( steerConfig.rtkCorrectionURL, sizeof( steerConfig.rtkCorrectionURL ) );
+      control->value.toCharArray( steerConfig.rtkCorrectionServer, sizeof( steerConfig.rtkCorrectionServer ) );
       setResetButtonToRed();
     } );
+    ESPUI.addControl( ControlType::Text, "Username*", String( steerConfig.rtkCorrectionUsername ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      control->value.toCharArray( steerConfig.rtkCorrectionUsername, sizeof( steerConfig.rtkCorrectionUsername ) );
+      setResetButtonToRed();
+    } );
+    ESPUI.addControl( ControlType::Text, "Password*", String( steerConfig.rtkCorrectionPassword ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      control->value.toCharArray( steerConfig.rtkCorrectionPassword, sizeof( steerConfig.rtkCorrectionPassword ) );
+      setResetButtonToRed();
+    } );
+    ESPUI.addControl( ControlType::Text, "Mountpoint*", String( steerConfig.rtkCorrectionMountpoint ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      control->value.toCharArray( steerConfig.rtkCorrectionMountpoint, sizeof( steerConfig.rtkCorrectionMountpoint ) );
+      setResetButtonToRed();
+    } );
+    {
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Port*",  String( steerConfig.rtkCorrectionPort ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.rtkCorrectionPort = control->value.toInt();
+      } );
+      ESPUI.addControl( ControlType::Min, "Min", String( "1" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "65535" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, num );
+    }
 
     {
       uint16_t baudrate = ESPUI.addControl( ControlType::Select, "Baudrate*", String( steerConfig.rtkCorrectionBaudrate ), ControlColor::Peterriver, tab,

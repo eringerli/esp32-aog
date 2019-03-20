@@ -166,18 +166,64 @@ void nmeaWorker( void* z ) {
   }
 }
 
-void rtkCorrectionWorker( void* z ) {
+void ntripWorker( void* z ) {
   vTaskDelay( 2000 );
 
   Control* labelNtripHandle = ESPUI.getControl( labelStatusNtrip );
+
+  initialisation.rtkCorrectionURL.reserve( 200 );
+  initialisation.rtkCorrectionURL = "http://";
+
+  if ( steerConfig.rtkCorrectionUsername != '\0' ) {
+    initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionUsername;
+
+    if ( steerConfig.rtkCorrectionPassword != '\0' ) {
+      initialisation.rtkCorrectionURL += ":";
+      initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionPassword;
+    }
+
+    initialisation.rtkCorrectionURL += "@";
+  }
+
+  initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionServer;
+
+  if ( steerConfig.rtkCorrectionPort != '\0' ) {
+    initialisation.rtkCorrectionURL += ":";
+    initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionPort;
+  }
+
+  initialisation.rtkCorrectionURL += "/";
+
+  if ( steerConfig.rtkCorrectionMountpoint != '\0' ) {
+    initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionMountpoint;
+  }
+
+  Serial.print( "rtkCorrectionURL: " );
+  Serial.println( initialisation.rtkCorrectionURL );
+
+
+  if ( initialisation.rtkCorrectionURL.length() <= 8 ) {
+    // update WebUI
+    {
+      labelNtripHandle->value = String( "Cannot connect to " ) + String( initialisation.rtkCorrectionURL );
+      labelNtripHandle->color = ControlColor::Carrot;
+      ESPUI.updateControl( labelNtripHandle );
+    }
+
+    // delete this task
+    TaskHandle_t myself = xTaskGetCurrentTaskHandle();
+    vTaskDelete( myself );
+
+    return;
+  }
 
   for ( ;; ) {
     Serial.print( "NTRIP" );
 
     Serial.print( "[HTTP] GET URL: " );
-    Serial.println( steerConfig.rtkCorrectionURL );
+    Serial.println( initialisation.rtkCorrectionURL );
     HTTPClient http;
-    http.begin( steerConfig.rtkCorrectionURL );
+    http.begin( initialisation.rtkCorrectionURL );
     http.setUserAgent( "NTRIP CoffeetracNTRIPClient" );
     Serial.println( "[HTTP] GET()" );
     int httpCode = http.GET();
@@ -191,7 +237,7 @@ void rtkCorrectionWorker( void* z ) {
       if ( httpCode == HTTP_CODE_OK ) {
         // update WebUI
         {
-          labelNtripHandle->value = String( "Connected to " ) + String( steerConfig.rtkCorrectionURL );
+          labelNtripHandle->value = String( "Connected to " ) + String( initialisation.rtkCorrectionURL );
           labelNtripHandle->color = ControlColor::Emerald;
           ESPUI.updateControl( labelNtripHandle );
         }
@@ -285,16 +331,12 @@ void rtkCorrectionWorker( void* z ) {
         Serial.println();
         Serial.print( "[HTTP] connection closed or file end.\n" );
 
-      } else {
-        break;
       }
-    } else {
-      break;
     }
 
     // update WebUI
     {
-      labelNtripHandle->value = String( "Cannot connect to " ) + String( steerConfig.rtkCorrectionURL );
+      labelNtripHandle->value = String( "Cannot connect to " ) + String( initialisation.rtkCorrectionURL );
       labelNtripHandle->color = ControlColor::Carrot;
       ESPUI.updateControl( labelNtripHandle );
     }
@@ -315,7 +357,7 @@ void initRtkCorrection() {
   Serial2.begin( steerConfig.rtkCorrectionBaudrate );
 
   if ( steerConfig.rtkCorrectionType == SteerConfig::RtkCorrectionType::Ntrip ) {
-    xTaskCreate( rtkCorrectionWorker, "rtkCorrectionWorker", 4096, NULL, 8, NULL );
+    xTaskCreate( ntripWorker, "ntripWorker", 4096, NULL, 8, NULL );
   }
 
   xTaskCreate( nmeaWorker, "nmeaWorker", 4096, NULL, 6, NULL );
