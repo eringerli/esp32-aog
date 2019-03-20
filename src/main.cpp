@@ -202,13 +202,17 @@ void setup( void ) {
 
   buttonReset = ESPUI.addControl( ControlType::Button, "Store the Settings", "Apply", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
-    writeEeprom();
+    if ( id == B_UP ) {
+      writeEeprom();
+    }
   } );
 
   buttonReset = ESPUI.addControl( ControlType::Button, "If this turn red, you have to", "Apply & Reset", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
-    writeEeprom();
-    ESP.restart();
+    if ( id == B_UP ) {
+      writeEeprom();
+      ESP.restart();
+    }
   } );
 
   // Status Tab
