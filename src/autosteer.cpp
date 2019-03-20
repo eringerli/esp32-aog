@@ -58,12 +58,12 @@ void autosteerWorker100Hz( void* z ) {
          steerSetpoints.speed < 1*/
        ) {
       steerSetpoints.enabled = false;
-      Serial.print( "Autosteer disabled: " );
-      Serial.print( timeoutPoint );
-      Serial.print( ", " );
-      Serial.print( steerSetpoints.lastPacketReceived );
-      Serial.print( ", " );
-      Serial.println( steerSetpoints.distanceFromLine );
+//       Serial.print( "Autosteer disabled: " );
+//       Serial.print( timeoutPoint );
+//       Serial.print( ", " );
+//       Serial.print( steerSetpoints.lastPacketReceived );
+//       Serial.print( ", " );
+//       Serial.println( steerSetpoints.distanceFromLine );
 
       switch ( initialisation.outputType ) {
         case SteerConfig::OutputType::SteeringMotorIBT2: {

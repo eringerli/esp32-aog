@@ -300,7 +300,7 @@ void setup( void ) {
     } );
 
     {
-      uint16_t sel = ESPUI.addControl( ControlType::Slider, "PWM Frequency", String( steerConfig.pwmFrequency ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Slider, "PWM Frequency", String( steerConfig.pwmFrequency ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.pwmFrequency = control->value.toInt();
 
@@ -315,9 +315,9 @@ void setup( void ) {
             break;
         }
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "1000" ), ControlColor::Peterriver, sel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "5000" ), ControlColor::Peterriver, sel );
-      ESPUI.addControl( ControlType::Step, "Step", String( "100" ), ControlColor::Peterriver, sel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "1000" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "5000" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( "100" ), ControlColor::Peterriver, num );
     }
   }
   
@@ -330,59 +330,59 @@ void setup( void ) {
     } );
     
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "PID Kp", String( steerConfig.steeringPidKp ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "PID Kp", String( steerConfig.steeringPidKp ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steeringPidKp = control->value.toDouble();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( ".01" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( ".01" ), ControlColor::Peterriver, num );
     }
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "PID Ki", String( steerConfig.steeringPidKi ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "PID Ki", String( steerConfig.steeringPidKi ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steeringPidKi = control->value.toDouble();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( ".0001" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( ".0001" ), ControlColor::Peterriver, num );
     }
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "PID Kd", String( steerConfig.steeringPidKd ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "PID Kd", String( steerConfig.steeringPidKd ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steeringPidKd = control->value.toDouble();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( ".0001" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( ".0001" ), ControlColor::Peterriver, num );
     }
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "Turn Output on if error is greater (BangOn)", String( steerConfig.steeringPidBangOn ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Turn Output on if error is greater (BangOn)", String( steerConfig.steeringPidBangOn ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steeringPidBangOn = control->value.toDouble();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( ".1" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( ".1" ), ControlColor::Peterriver, num );
     }
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "Turn Output off if error is smaller (BangOff)", String( steerConfig.steeringPidBangOff ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Turn Output off if error is smaller (BangOff)", String( steerConfig.steeringPidBangOff ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steeringPidBangOff = control->value.toDouble();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( ".1" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( ".1" ), ControlColor::Peterriver, num );
     }
     
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "Distance from Line to turn Integral/Derivative of PID off", String( steerConfig.steeringPidDflTurnIdOff ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Distance from Line to turn Integral/Derivative of PID off", String( steerConfig.steeringPidDflTurnIdOff ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steeringPidDflTurnIdOff = control->value.toInt();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "200" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "200" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, num );
     }
     
   }
@@ -493,23 +493,23 @@ void setup( void ) {
     } );
 
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "Wheel Angle Sensor Center", String( steerConfig.steeringPositionZero ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Wheel Angle Sensor Center", String( steerConfig.steeringPositionZero ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steeringPositionZero = control->value.toInt();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "26000" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "26000" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, num );
     }
 
     {
-      uint16_t wheel = ESPUI.addControl( ControlType::Number, "Wheel Angle Counts per Degree", String( steerConfig.steerSensorCountsPerDegree ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Wheel Angle Counts per Degree", String( steerConfig.steerSensorCountsPerDegree ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.steerSensorCountsPerDegree = control->value.toFloat();
       } );
-      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Max, "Max", String( "250" ), ControlColor::Peterriver, wheel );
-      ESPUI.addControl( ControlType::Step, "Step", String( "0.1" ), ControlColor::Peterriver, wheel );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "250" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( "0.1" ), ControlColor::Peterriver, num );
     }
 
     ESPUI.addControl( ControlType::Switcher, "Invert Wheel Angle Sensor", String( steerConfig.invertWheelAngleSensor ? "1" : "0" ), ControlColor::Peterriver, tab,
@@ -543,7 +543,7 @@ void setup( void ) {
 //       ESPUI.addControl( ControlType::Option, "DOGS2", "2", ControlColor::Alizarin, sel );
     }
     {
-      uint16_t rollOffset = ESPUI.addControl( ControlType::Slider, "Roll Offset", String( steerConfig.rollOffset ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Slider, "Roll Offset", String( steerConfig.rollOffset ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         Serial.print( "rollOffset: " );
         Serial.print( control->value );
@@ -553,9 +553,9 @@ void setup( void ) {
         Serial.print( ", " );
         Serial.println( steerConfig.rollOffset );
       } );
-      ESPUI.addControl( ControlType::Min, "Roll Min", String( "-10" ), ControlColor::Peterriver, rollOffset );
-      ESPUI.addControl( ControlType::Max, "Roll Max", String( "10" ), ControlColor::Peterriver, rollOffset );
-      ESPUI.addControl( ControlType::Step, "Roll Step", String( "0.01" ), ControlColor::Peterriver, rollOffset );
+      ESPUI.addControl( ControlType::Min, "Roll Min", String( "-10" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Roll Max", String( "10" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Roll Step", String( "0.01" ), ControlColor::Peterriver, num );
     }
 
   }
