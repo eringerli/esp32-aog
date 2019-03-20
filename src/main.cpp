@@ -204,15 +204,26 @@ void setup( void ) {
   []( Control * control, int id ) {
     writeEeprom();
   } );
-  
+
   buttonReset = ESPUI.addControl( ControlType::Button, "If this turn red, you have to", "Apply & Reset", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
     writeEeprom();
     ESP.restart();
   } );
 
+  // Status Tab
+  {
+    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Status", "Status" );
 
-// Network Tab
+    labelStatusOutput = ESPUI.addControl( ControlType::Label, "Output:", "No Output configured", ControlColor::Turquoise, tab );
+    labelStatusAdc = ESPUI.addControl( ControlType::Label, "ADC:", "No ADC configured", ControlColor::Turquoise, tab );
+    labelStatusImu = ESPUI.addControl( ControlType::Label, "IMU:", "No IMU configured", ControlColor::Turquoise, tab );
+    labelStatusInclino = ESPUI.addControl( ControlType::Label, "Inclinometer:", "No Inclinometer configured", ControlColor::Turquoise, tab );
+    labelStatusGps = ESPUI.addControl( ControlType::Label, "GPS:", "Not configured", ControlColor::Turquoise, tab );
+    labelStatusNtrip = ESPUI.addControl( ControlType::Label, "NTRIP:", "Not configured", ControlColor::Turquoise, tab );
+  }
+
+  // Network Tab
   {
     uint16_t tab = ESPUI.addControl( ControlType::Tab, "Network", "Network" );
 
@@ -248,8 +259,56 @@ void setup( void ) {
     } );
   }
 
+  // Switches/Buttons Tab
+  {
+    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Switches/Buttons", "Switches/Buttons" );
 
-// Output Tab
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Input Workswitch*", String( ( int )steerConfig.gpioWorkswitch ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.gpioWorkswitch = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioInput( sel );
+      addGpioOutput( sel );
+    }
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Workswitch LED*", String( ( int )steerConfig.gpioWorkswitch ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.gpioWorkswitch = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioOutput( sel );
+    }
+
+    ESPUI.addControl( ControlType::Switcher, "Autosteer input as Button*", String( steerConfig.autosteerButton ? "1" : "0" ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      steerConfig.autosteerButton = control->value.toInt() == 1;
+    } );
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Input Autosteer switch/button*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioInput( sel );
+      addGpioOutput( sel );
+    }
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Autosteer LED*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioOutput( sel );
+    }
+  }
+
+  // Steering Tab
   {
     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering", "Steering" );
 
@@ -320,7 +379,8 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Step, "Step", String( "100" ), ControlColor::Peterriver, num );
     }
   }
-  
+
+  // Steering PID Tab
   {
     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering PID", "Steering PID" );
 
@@ -328,7 +388,7 @@ void setup( void ) {
     []( Control * control, int id ) {
       steerConfig.allowPidOverwrite = control->value.toInt() == 1;
     } );
-    
+
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "PID Kp", String( steerConfig.steeringPidKp ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
@@ -374,7 +434,7 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Step", String( ".1" ), ControlColor::Peterriver, num );
     }
-    
+
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Distance from Line to turn Integral/Derivative of PID off", String( steerConfig.steeringPidDflTurnIdOff ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
@@ -384,94 +444,9 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Max", String( "200" ), ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, num );
     }
-    
   }
 
-  {
-    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Switches/Buttons", "Switches/Buttons" );
-
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Input Workswitch*", String( ( int )steerConfig.gpioWorkswitch ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioWorkswitch = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioInput( sel );
-      addGpioOutput( sel );
-    }
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Workswitch LED*", String( ( int )steerConfig.gpioWorkswitch ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioWorkswitch = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioOutput( sel );
-    }
-
-    ESPUI.addControl( ControlType::Switcher, "Autosteer input as Button*", String( steerConfig.autosteerButton ? "1" : "0" ), ControlColor::Wetasphalt, tab,
-    []( Control * control, int id ) {
-      steerConfig.autosteerButton = control->value.toInt() == 1;
-    } );
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Input Autosteer switch/button*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioInput( sel );
-      addGpioOutput( sel );
-    }
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Autosteer LED*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioOutput( sel );
-    }
-  }
-
-  {
-    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering Wheel Encoder", "Steering Wheel Encoder" );
-
-    ESPUI.addControl( ControlType::Switcher, "Steering Wheel Encoder*", String( steerConfig.steeringWheelEncoder ? "1" : "0" ), ControlColor::Wetasphalt, tab,
-    []( Control * control, int id ) {
-      steerConfig.steeringWheelEncoder = control->value.toInt() == 1;
-      setResetButtonToRed();
-    } );
-
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input A*", String( ( int )steerConfig.gpioWheelencoderA ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioWheelencoderA = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioInput( sel );
-      addGpioOutput( sel );
-    }
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input B*", String( ( int )steerConfig.gpioWheelencoderB ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioWheelencoderB = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioInput( sel );
-      addGpioOutput( sel );
-    }
-
-    ESPUI.addControl( ControlType::Number, "Steering Wheel Encoder max Counts", String( steerConfig.pulseCountMax ), ControlColor::Peterriver, tab,
-    []( Control * control, int id ) {
-      steerConfig.pulseCountMax = control->value.toInt();
-    } );
-  }
-
-// Sensors Tab
+  // Wheel Angle Sensor Tab
   {
     uint16_t tab = ESPUI.addControl( ControlType::Tab, "Wheel Angle Sensor", "Wheel Angle Sensor" );
 
@@ -557,10 +532,46 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Roll Max", String( "10" ), ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Roll Step", String( "0.01" ), ControlColor::Peterriver, num );
     }
-
   }
 
-// GPS Tab
+  // Steering Wheel Encoder Tab
+  {
+    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering Wheel Encoder", "Steering Wheel Encoder" );
+
+    ESPUI.addControl( ControlType::Switcher, "Steering Wheel Encoder*", String( steerConfig.steeringWheelEncoder ? "1" : "0" ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      steerConfig.steeringWheelEncoder = control->value.toInt() == 1;
+      setResetButtonToRed();
+    } );
+
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input A*", String( ( int )steerConfig.gpioWheelencoderA ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.gpioWheelencoderA = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioInput( sel );
+      addGpioOutput( sel );
+    }
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input B*", String( ( int )steerConfig.gpioWheelencoderB ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.gpioWheelencoderB = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioInput( sel );
+      addGpioOutput( sel );
+    }
+
+    ESPUI.addControl( ControlType::Number, "Steering Wheel Encoder max Counts", String( steerConfig.pulseCountMax ), ControlColor::Peterriver, tab,
+    []( Control * control, int id ) {
+      steerConfig.pulseCountMax = control->value.toInt();
+    } );
+  }
+
+  // NTRIP/GPS Tab
   {
     uint16_t tab     = ESPUI.addControl( ControlType::Tab, "NTRIP/GPS", "NTRIP/GPS" );
 
@@ -644,19 +655,6 @@ void setup( void ) {
 //       ESPUI.addControl( ControlType::Option, "Bluetooth", "6", ControlColor::Alizarin, sel );
     }
   }
-
-// Status Tab
-  {
-    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Status", "Status" );
-
-    labelStatusOutput = ESPUI.addControl( ControlType::Label, "Output:", "No Output configured", ControlColor::Turquoise, tab );
-    labelStatusAdc = ESPUI.addControl( ControlType::Label, "ADC:", "No ADC configured", ControlColor::Turquoise, tab );
-    labelStatusImu = ESPUI.addControl( ControlType::Label, "IMU:", "No IMU configured", ControlColor::Turquoise, tab );
-    labelStatusInclino = ESPUI.addControl( ControlType::Label, "Inclinometer:", "No Inclinometer configured", ControlColor::Turquoise, tab );
-    labelStatusGps = ESPUI.addControl( ControlType::Label, "GPS:", "Not configured", ControlColor::Turquoise, tab );
-    labelStatusNtrip = ESPUI.addControl( ControlType::Label, "NTRIP:", "Not configured", ControlColor::Turquoise, tab );
-  }
-
 
   i2cMutex = xSemaphoreCreateMutex();
 
