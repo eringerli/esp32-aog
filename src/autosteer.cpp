@@ -27,13 +27,13 @@
 
 #include "main.hpp"
 
-AsyncUDP udpSendFrom;
-AsyncUDP udpLocalPort;
-AsyncUDP udpRemotePort;
 SteerSettings steerSettings;
 SteerSetpoints steerSetpoints;
 SteerMachineControl steerMachineControl;
 
+AsyncUDP udpSendFrom;
+AsyncUDP udpLocalPort;
+AsyncUDP udpRemotePort;
 
 double pidOutput = 0;
 AutoPID pid(
@@ -153,23 +153,23 @@ void autosteerWorker100Hz( void* z ) {
 //             case SteerConfig::OutputType::SteeringMotorIBT2: {
 //               if ( driveValue > 0 ) {
 //                 Serial.println( "driveValue > 0" );
-// 
+//
 //                 ledcWrite( 0, driveValue );
 //                 ledcWrite( 1, 0 );
 //               }
-// 
+//
 //               if ( driveValue == 0 ) {
 //                 Serial.println( "driveValue == 0" );
 //                 ledcWrite( 0, 0 );
 //                 ledcWrite( 1, 0 );
 //               }
-// 
+//
 //               if ( driveValue < 0 ) {
 //                 Serial.println( "driveValue < 0" );
 //                 ledcWrite( 0, 0 );
 //                 ledcWrite( 1, -driveValue );
 //               }
-// 
+//
 //               digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
 //             }
 //             break;
@@ -458,8 +458,7 @@ void initAutosteer() {
 
   if ( steerConfig.gpioWheelencoderA != SteerConfig::Gpio::None &&
        steerConfig.gpioWheelencoderB != SteerConfig::Gpio::None ) {
-    encoder.setCount( 0 );
-    encoder.attachHalfQuad( ( uint8_t )steerConfig.gpioWheelencoderA, ( uint8_t )steerConfig.gpioWheelencoderB );
+
   }
 
   // 10ms -> 100Hz
