@@ -743,6 +743,15 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "Serial2", "5", ControlColor::Alizarin, sel );
 //       ESPUI.addControl( ControlType::Option, "Bluetooth", "6", ControlColor::Alizarin, sel );
     }
+    {
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Port for TCP (set to 0 to deactivate)*",  String( steerConfig.sendNmeaDataTcpPort ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.sendNmeaDataTcpPort = control->value.toInt();
+      } );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "65535" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, num );
+    }
   }
 
   i2cMutex = xSemaphoreCreateMutex();

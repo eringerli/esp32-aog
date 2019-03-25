@@ -23,6 +23,9 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 
+// #include <ESPAsyncTCP.h>
+#include <vector>
+
 #include <HTTPClient.h>
 
 #include <ESPUI.h>
@@ -37,11 +40,62 @@ constexpr size_t nmeaBufferSize = 120;
 char nmeaBuffer[nmeaBufferSize];
 MicroNMEA nmea( nmeaBuffer, nmeaBufferSize );
 
+AsyncServer* server;
+static std::vector<AsyncClient*> clients;
+
+static void handleError( void* arg, AsyncClient* client, int8_t error ) {
+  Serial.printf( "\n connection error %s from client %s \n", client->errorToString( error ), client->remoteIP().toString().c_str() );
+}
+
+static void handleData( void* arg, AsyncClient* client, void* data, size_t len ) {
+  Serial.printf( "\n data received from client %s \n", client->remoteIP().toString().c_str() );
+  Serial.write( ( uint8_t* )data, len );
+
+//  // reply to client
+//  if (client->space() > 32 && client->canSend()) {
+//    char reply[32];
+//    sprintf(reply, "this is from %s", SERVER_HOST_NAME);
+//    client->add(reply, strlen(reply));
+//    client->send();
+//  }
+}
+
+static void handleDisconnect( void* arg, AsyncClient* client ) {
+  Serial.printf( "\n client %s disconnected \n", client->remoteIP().toString().c_str() );
+
+  // remove client from vector
+  clients.erase( std::remove_if( clients.begin(), clients.end(), [client]( AsyncClient * itClient ) {
+    return itClient == client;
+  } ), clients.end() );
+}
+
+static void handleTimeOut( void* arg, AsyncClient* client, uint32_t time ) {
+  Serial.printf( "\n client ACK timeout ip: %s \n", client->remoteIP().toString().c_str() );
+}
+static void handleNewClient( void* arg, AsyncClient* client ) {
+  Serial.printf( "\n new client has been connected to server, ip: %s", client->remoteIP().toString().c_str() );
+
+  // add to list
+  clients.push_back( client );
+
+  // register events
+  client->onData( &handleData, NULL );
+  client->onError( &handleError, NULL );
+  client->onDisconnect( &handleDisconnect, NULL );
+  client->onTimeout( &handleTimeOut, NULL );
+}
+
 void nmeaWorker( void* z ) {
 
   String sentence;
   sentence.reserve( nmeaBufferSize );
   lastGN.reserve( sizeof( SteerConfig::rtkCorrectionNmeaToSend ) );
+
+  if ( steerConfig.sendNmeaDataTcpPort != 0 ) {
+    server = new AsyncServer( steerConfig.sendNmeaDataTcpPort ); // start listening on tcp port 7050
+    server->onClient( &handleNewClient, server );
+    server->begin();
+  }
 
   constexpr TickType_t xFrequency = 50;
   TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -72,6 +126,15 @@ void nmeaWorker( void* z ) {
 //           sentence += "*";
 //           sentence += checksum;
           sentence += "\r\n";
+
+          // send sentence to all connected clients
+          for ( auto client = clients.begin() ; client != clients.end(); ++client ) {
+            // reply to client
+            if ( ( *client )->space() > sentence.length() && ( *client )->canSend() ) {
+              ( *client )->write( sentence.c_str(), sentence.length() );
+              ( *client )->send();
+            }
+          }
 
           switch ( steerConfig.sendNmeaDataTo ) {
             case SteerConfig::SendNmeaDataTo::UDP: {
