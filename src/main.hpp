@@ -44,6 +44,8 @@ extern uint16_t labelRoll;
 extern uint16_t labelWheelAngle;
 extern uint16_t textNmeaToSend;
 
+extern uint16_t labelWheelAngleDisplacement;
+
 extern uint16_t labelStatusOutput;
 extern uint16_t labelStatusAdc;
 extern uint16_t labelStatusImu;
@@ -93,9 +95,9 @@ struct SteerConfig {
     ADS1115A2A3Differential = 202
   };
 
-  char ssid[24] = "NetzRosegghof3";
-  char password[24] = "gghof080";
-  char hostname[24] = "ESP32-AGO";
+  char ssid[24] = "AOG";
+  char password[24] = "aogaogaog";
+  char hostname[24] = "ESP32-AOG";
 
   //set to 1  if you want to use Steering Motor + Cytron MD30C Driver
   //set to 2  if you want to use Steering Motor + IBT 2  Driver
@@ -116,22 +118,40 @@ struct SteerConfig {
   SteerConfig::Gpio gpioEn = SteerConfig::Gpio::Esp32Gpio14;
 
   bool allowPidOverwrite = true;
-  double steeringPidKp = 5;
-  double steeringPidKi = 0;
-  double steeringPidKd = 0;
-  double steeringPidBangOn = 20;
-  double steeringPidBangOff = 0.5;
+  double steeringPidKp = 200;
+  double steeringPidKi = .5;
+  double steeringPidKd = 1;
+  double steeringPidBangOn = 40;
+  double steeringPidBangOff = 0.1;
   uint16_t steeringPidDflTurnIdOff = 40;
 
   SteerConfig::Gpio gpioWorkswitch = SteerConfig::Gpio::None;
   SteerConfig::Gpio gpioSteerswitch = SteerConfig::Gpio::None;
   bool autosteerButton = true;
 
-  SteerConfig::AnalogIn analogInWheelAngleSensor = SteerConfig::AnalogIn::None;
+
+
+  enum class WheelAngleSensorType : uint8_t {
+    WheelAngle = 0,
+    TieRodDisplacement
+  } wheelAngleSensorType = WheelAngleSensorType::WheelAngle;
+
+  SteerConfig::AnalogIn wheelAngleInput = SteerConfig::AnalogIn::None;
+
   bool allowWheelAngleCenterAndCountsOverwrite = false;
   bool invertWheelAngleSensor = false;
-  float steerSensorCountsPerDegree = 118;
-  uint16_t steeringPositionZero = 13333;
+  float wheelAngleCountsPerDegree = 118;
+  uint16_t wheelAnglePositionZero = 5450;
+  
+
+  float wheelAngleOffset = 0;
+
+  float wheelAngleFirstArmLenght = 100;
+  float wheelAngleSecondArmLenght = 310;
+  float wheelAngleTieRodStroke = 190;
+  float wheelAngleMinimumAngle = 37;
+  float wheelAngleTrackArmLenght = 165;
+  
 
   bool steeringWheelEncoder = false;
   SteerConfig::Gpio gpioWheelencoderA = SteerConfig::Gpio::None;
@@ -143,12 +163,24 @@ struct SteerConfig {
     None = 0,
     BNO055 = 1
   } imuType = ImuType::None;
+  enum class ImuOrientation : uint8_t {
+    Forwards = 0,
+    Right,
+    Backwards,
+    Left
+  } imuOrientation = ImuOrientation::Forwards;
 
   enum class InclinoType : uint8_t {
     None = 0,
     MMA8451 = 1,
     DOGS2
   } inclinoType = InclinoType::None;
+  enum class InclinoOrientation : uint8_t {
+    Forwards = 0,
+    Backwards,
+    Left,
+    Right
+  } inclinoOrientation = InclinoOrientation::Forwards;
 
   float rollOffset = 0;
 
@@ -160,7 +192,7 @@ struct SteerConfig {
     tcp
   } rtkCorrectionType = RtkCorrectionType::None;
 
-  char rtkCorrectionServer[48] = "192.168.11.63";
+  char rtkCorrectionServer[48] = "home.magahugu.ch";
   uint16_t rtkCorrectionPort = 2101;
   char rtkCorrectionUsername[24] = "gps";
   char rtkCorrectionPassword[24] = "eringer";
@@ -170,7 +202,7 @@ struct SteerConfig {
 //   char rtkCorrectionURL[120] = "http://gps:eringer@192.168.11.63:2101/STALL";
   char rtkCorrectionNmeaToSend[120] = "";
 
-  uint32_t rtkCorrectionBaudrate = 38400;
+  uint32_t rtkCorrectionBaudrate = 115200;
 
   uint8_t ntripPositionSendIntervall = 30;
 
@@ -184,6 +216,8 @@ struct SteerConfig {
     Bluetooth
   } sendNmeaDataTo = SendNmeaDataTo::None;
 
+  uint16_t sendNmeaDataTcpPort = 0;
+
   uint16_t portSendFrom = 5577;
   uint16_t portListenTo = 8888;
   uint16_t portSendTo = 9999;
@@ -195,7 +229,7 @@ extern adafruit_bno055_offsets_t bno055CalibrationData;
 
 struct Initialisation {
   SteerConfig::OutputType outputType = SteerConfig::OutputType::None;
-  SteerConfig::AnalogIn analogInWheelAngleSensor = SteerConfig::AnalogIn::None;
+  SteerConfig::AnalogIn wheelAngleInput = SteerConfig::AnalogIn::None;
   SteerConfig::ImuType imuType = SteerConfig::ImuType::None;
   SteerConfig::InclinoType inclinoType = SteerConfig::InclinoType::None;
 
@@ -227,8 +261,8 @@ struct SteerSettings {
   float Kd = 0.0f;  //derivative gain
   uint8_t minPWMValue = 10;
   int maxIntegralValue = 20; //max PWM value for integral PID component
-  float steerSensorCountsPerDegree = 118;
-  int16_t steeringPositionZero = 0;
+  float wheelAngleCountsPerDegree = 118;
+  uint16_t wheelAnglePositionZero = 0;
 
   time_t lastPacketReceived = 0;
 };
@@ -243,6 +277,8 @@ struct SteerSetpoints {
   bool enabled = false;
   float receivedRoll = 0;
   double actualSteerAngle = 0;
+  double wheelAngleCurrentDisplacement = 0;
+  double wheelAngleRaw = 0;
   float correction = 0;
 
   time_t lastPacketReceived = 0;

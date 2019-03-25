@@ -189,33 +189,39 @@ void autosteerWorker100Hz( void* z ) {
         Serial.print( steerSetpoints.requestedSteerAngle );
         Serial.print( "pidOutput: " );
         Serial.println( pidOutput );
+        
+        
+        double pidOutputTmp = steerConfig.invertOutput ? pidOutput : -pidOutput;
 
-//         switch ( initialisation.outputType ) {
-//           case SteerConfig::OutputType::SteeringMotorIBT2: {
-//             if ( pidOutput > 0 ) {
-//               Serial.println( "driveValue > 0" );
-//
-//               ledcWrite( 0, pidOutput );
-//               ledcWrite( 1, 0 );
-//             }
-//
-//             if ( pidOutput == 0 ) {
+        switch ( initialisation.outputType ) {
+          case SteerConfig::OutputType::SteeringMotorIBT2: {
+            if ( pidOutputTmp >= 0 ) {
+              Serial.println( "driveValue > 0" );
+
+              ledcWrite( 0, pidOutputTmp );
+              ledcWrite( 1, 0 );
+            }
+
+//             if ( pidOutputTmp == 0 ) {
 //               Serial.println( "driveValue == 0" );
 //               ledcWrite( 0, 0 );
 //               ledcWrite( 1, 0 );
-//             digitalWrite( ( uint8_t )steerConfig.gpioEn, LOW );
+//               digitalWrite( ( uint8_t )steerConfig.gpioEn, LOW );
 //             }
-//
-//             if ( pidOutput < 0 ) {
-//               Serial.println( "driveValue < 0" );
-//               ledcWrite( 0, 0 );
-//               ledcWrite( 1, -pidOutput );
-//             }
-//
-//             digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
-//           }
-//           break;
-//         }
+
+            if ( pidOutputTmp < 0 ) {
+              Serial.println( "driveValue < 0" );
+              ledcWrite( 0, 0 );
+              ledcWrite( 1, -pidOutputTmp );
+            }
+
+            digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
+          }
+          break;
+
+          default:
+            break;
+        }
 
       }
     }
@@ -351,10 +357,10 @@ void initAutosteer() {
           steerSettings.Ki = ( float )data[3] * 0.001; // read Ki from AgOpenGPS
           steerSettings.Kd = ( float )data[4] * 1.0; // read Kd from AgOpenGPS
           steerSettings.Ko = ( float )data[5] * 0.1; // read Ko from AgOpenGPS
-          steerSettings.steeringPositionZero = ( int8_t )data[6]; //read steering zero offset
+          steerSettings.wheelAnglePositionZero = ( int8_t )data[6]; //read steering zero offset
           steerSettings.minPWMValue = data[7]; //read the minimum amount of PWM for instant on
           steerSettings.maxIntegralValue = data[8] * 0.1; //
-          steerSettings.steerSensorCountsPerDegree = data[9]; //sent as 10 times the setting displayed in AOG
+          steerSettings.wheelAngleCountsPerDegree = data[9]; //sent as 10 times the setting displayed in AOG
 
           steerSettings.lastPacketReceived = millis();
         }

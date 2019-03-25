@@ -247,6 +247,12 @@ void sensorWorker100HzPoller( void* z ) {
       }
 
       float heading = bnoFilterHeading.step( euler.x() );
+      heading += ( uint16_t )steerConfig.imuOrientation * 90;
+
+      if ( heading > 360 ) {
+        heading -= 360;
+      }
+
       steerImuInclinometerData.bnoAverageHeading += heading;
 
 
@@ -259,7 +265,7 @@ void sensorWorker100HzPoller( void* z ) {
 // //       Serial.print( "filtered: " );
 // //       Serial.print( heading );
 // //       Serial.print( "avg: " );
-// //       Serial.println( (float)bnoAverageHeading );
+// //       Serial.println( (float)steerImuInclinometerData.bnoAverageHeading );
 //       Serial.print( " Y: " );
 //       Serial.print( euler.y() );
 //       Serial.print( " Z: " );
@@ -281,19 +287,19 @@ void sensorWorker100HzPoller( void* z ) {
     }
 
 
-    if ( steerConfig.analogInWheelAngleSensor != SteerConfig::AnalogIn::None ) {
+    if ( steerConfig.wheelAngleInput != SteerConfig::AnalogIn::None ) {
       float wheelAngleTmp = 0;
 
-      switch ( ( uint8_t )steerConfig.analogInWheelAngleSensor ) {
+      switch ( ( uint8_t )steerConfig.wheelAngleInput ) {
         case ( uint8_t )SteerConfig::AnalogIn::Esp32GpioA2 ...( uint8_t )SteerConfig::AnalogIn::Esp32GpioA12: {
-          wheelAngleTmp = analogRead( ( uint8_t )steerConfig.analogInWheelAngleSensor );
+          wheelAngleTmp = analogRead( ( uint8_t )steerConfig.wheelAngleInput );
         }
         break;
 
         case ( uint8_t )SteerConfig::AnalogIn::ADS1115A0Single ...( uint8_t )SteerConfig::AnalogIn::ADS1115A3Single: {
           if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
             wheelAngleTmp = ads.readADC_SingleEnded(
-                              ( uint8_t )steerConfig.analogInWheelAngleSensor - ( uint8_t )SteerConfig::AnalogIn::ADS1115A0Single );
+                              ( uint8_t )steerConfig.wheelAngleInput - ( uint8_t )SteerConfig::AnalogIn::ADS1115A0Single );
             xSemaphoreGive( i2cMutex );
           }
         }
@@ -324,24 +330,78 @@ void sensorWorker100HzPoller( void* z ) {
 //         Serial.print( wheelAngleTmp );
 
         if ( steerConfig.allowWheelAngleCenterAndCountsOverwrite ) {
-          wheelAngleTmp -= steerSettings.steeringPositionZero;
+          wheelAngleTmp -= steerSettings.wheelAnglePositionZero;
 //           Serial.print( ", " );
 //           Serial.print( wheelAngleTmp );
-          wheelAngleTmp /= steerSettings.steerSensorCountsPerDegree;
+          wheelAngleTmp /= steerSettings.wheelAngleCountsPerDegree;
 //           Serial.print( ", " );
 //           Serial.print( wheelAngleTmp );
         } else {
-          wheelAngleTmp -= steerConfig.steeringPositionZero;
+          wheelAngleTmp -= steerConfig.wheelAnglePositionZero;
 //           Serial.print( ", " );
 //           Serial.print( wheelAngleTmp );
-          wheelAngleTmp /= steerConfig.steerSensorCountsPerDegree;
+          wheelAngleTmp /= steerConfig.wheelAngleCountsPerDegree;
 //           Serial.print( ", " );
 //           Serial.print( wheelAngleTmp );
+        }
+
+        steerSetpoints.wheelAngleRaw = wheelAngleTmp;
+
+        if ( steerConfig.wheelAngleSensorType == SteerConfig::WheelAngleSensorType::TieRodDisplacement ) {
+          if ( steerConfig.wheelAngleFirstArmLenght != 0 && steerConfig.wheelAngleSecondArmLenght != 0 &&
+               steerConfig.wheelAngleTrackArmLenght != 0 && steerConfig.wheelAngleTieRodStroke != 0 ) {
+
+//             Serial.print( "Wheel Angle Displacement: " );
+//             Serial.print( wheelAngleTmp );
+
+            auto getDisplacementFromAngle = []( float angle ) {
+//               Serial.print( ",angle " );
+//               Serial.print( angle );
+              // a: 2. arm, b: 1. arm, c: abstand drehpunkt wineklsensor und anschlagpunt 2. arm an der spurstange
+              // gegenwinkel: winkel zwischen 1. arm und spurstange
+              double alpha = PI - radians( angle );
+//               Serial.print( ",alpha " );
+//               Serial.print( alpha );
+
+              // winkel zwischen spurstange und 2. arm
+              double gamma = PI - alpha - ( asin( steerConfig.wheelAngleFirstArmLenght * sin( alpha ) / steerConfig.wheelAngleSecondArmLenght ) );
+//               Serial.print( ",gamma " );
+//               Serial.print( gamma );
+
+              // auslenkung
+              return steerConfig.wheelAngleSecondArmLenght * sin( gamma ) / sin( alpha );
+            };
+
+            steerSetpoints.wheelAngleCurrentDisplacement = getDisplacementFromAngle( wheelAngleTmp );
+
+//             Serial.print( ", " );
+//             Serial.print( steerSetpoints.wheelAngleCurrentDisplacement );
+
+//             Serial.print( ",getDisplacementFromAngle " );
+//             Serial.print( getDisplacementFromAngle( steerConfig.wheelAngleMinimumAngle ) );
+            double relativeDisplacementToStraightAhead =
+              // real displacement
+              steerSetpoints.wheelAngleCurrentDisplacement -
+              // calculate middle of displacement -
+              ( getDisplacementFromAngle( steerConfig.wheelAngleMinimumAngle ) + ( steerConfig.wheelAngleTieRodStroke / 2 ) );
+
+//             Serial.print( ", " );
+//             Serial.print( relativeDisplacementToStraightAhead );
+
+
+            wheelAngleTmp = degrees( asin( relativeDisplacementToStraightAhead / steerConfig.wheelAngleTrackArmLenght ) );
+
+//             Serial.print( ", " );
+//             Serial.println( wheelAngleTmp );
+
+          }
         }
 
         if ( steerConfig.invertWheelAngleSensor ) {
           wheelAngleTmp *= ( float ) -1;
         }
+        
+        wheelAngleTmp -= steerConfig.wheelAngleOffset;
 
         wheelAngleTmp = wheelAngleSensorFilter.step( wheelAngleTmp );
         steerSetpoints.actualSteerAngle = wheelAngleTmp;
@@ -352,21 +412,28 @@ void sensorWorker100HzPoller( void* z ) {
 //         Serial.println( ( float )wasAverage );
       }
 
-      {
-        static uint8_t loopCounter = 0;
+    }
 
-        if ( loopCounter++ > 99 ) {
-          loopCounter = 0;
-          {
-            Control* handle = ESPUI.getControl( labelHeading );
-            handle->value = String( ( float )steerImuInclinometerData.bnoAverageHeading ) + String( "°" );
-            ESPUI.updateControl( handle );
-          }
-          {
-            Control* handle = ESPUI.getControl( labelWheelAngle );
-            handle->value = String( ( float )steerSetpoints.actualSteerAngle ) + String( "°" );
-            ESPUI.updateControl( handle );
-          }
+    {
+      static uint8_t loopCounter = 0;
+
+      if ( loopCounter++ > 99 ) {
+        loopCounter = 0;
+        {
+          Control* handle = ESPUI.getControl( labelHeading );
+          handle->value = String( ( float )steerImuInclinometerData.bnoAverageHeading ) + String( "°" );
+          ESPUI.updateControl( handle );
+        }
+        {
+          Control* handle = ESPUI.getControl( labelWheelAngle );
+          handle->value = String( ( float )steerSetpoints.actualSteerAngle ) + String( "°, Raw " ) +
+                          String( ( float )steerSetpoints.wheelAngleRaw ) + String( "°" );
+          ESPUI.updateControl( handle );
+        }
+        {
+          Control* handle = ESPUI.getControl( labelWheelAngleDisplacement );
+          handle->value = String( ( float )steerSetpoints.wheelAngleCurrentDisplacement ) + String( "mm" );
+          ESPUI.updateControl( handle );
         }
       }
     }
@@ -408,8 +475,32 @@ void sensorWorker10HzPoller( void* z ) {
       float fXg = accXaverage;
       float fYg = accYaverage;
       float fZg = accZaverage;
-      steerImuInclinometerData.roll  = ( atan2( -fYg, fZg ) * 180.0 ) / M_PI;
-      steerImuInclinometerData.pitch = ( atan2( fXg, sqrt( fYg * fYg + fZg * fZg ) ) * 180.0 ) / M_PI;
+      float roll  = ( atan2( -fYg, fZg ) * 180.0 ) / M_PI;
+      float pitch = ( atan2( fXg, sqrt( fYg * fYg + fZg * fZg ) ) * 180.0 ) / M_PI;
+
+      switch ( steerConfig.inclinoOrientation ) {
+        case SteerConfig::InclinoOrientation::Forwards:
+          steerImuInclinometerData.roll = -pitch;
+          steerImuInclinometerData.pitch = roll;
+          break;
+
+        case SteerConfig::InclinoOrientation::Backwards:
+          steerImuInclinometerData.roll = pitch;
+          steerImuInclinometerData.pitch = -roll;
+          break;
+
+        case SteerConfig::InclinoOrientation::Left:
+          steerImuInclinometerData.roll = -roll;
+          steerImuInclinometerData.pitch = -pitch;
+          break;
+
+        case SteerConfig::InclinoOrientation::Right:
+          steerImuInclinometerData.roll = roll;
+          steerImuInclinometerData.pitch = pitch;
+          break;
+      }
+
+      steerImuInclinometerData.roll -= steerConfig.rollOffset;
 
       {
         static uint8_t loopCounter = 0;
@@ -417,7 +508,7 @@ void sensorWorker10HzPoller( void* z ) {
         if ( loopCounter++ > 9 ) {
           loopCounter = 0;
           Control* handle = ESPUI.getControl( labelRoll );
-          handle->value = String( steerImuInclinometerData.roll - steerConfig.rollOffset ) + String( "°" );
+          handle->value = String( steerImuInclinometerData.roll ) + String( "°" );
           ESPUI.updateControl( handle );
         }
       }
@@ -489,7 +580,7 @@ void initSensors() {
     Control* handle = ESPUI.getControl( labelStatusAdc );
     handle->value = String( "ADC1115 initialized" );
     handle->color = ControlColor::Emerald;
-    initialisation.analogInWheelAngleSensor = steerConfig.analogInWheelAngleSensor;
+    initialisation.wheelAngleInput = steerConfig.wheelAngleInput;
     ESPUI.updateControl( handle );
   }
 
@@ -497,4 +588,6 @@ void initSensors() {
   xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 4096, NULL, 5, NULL );
   xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 4096, NULL, 2, NULL );
 }
+
+
 
