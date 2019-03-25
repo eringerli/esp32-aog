@@ -769,7 +769,9 @@ void setup( void ) {
    * since it is transmitted in cleartext. Just add a username and password,
    * for example begin("ESPUI Control", "username", "password")
    */
-  ESPUI.begin( "ESPUI Control" );
+  String title = "AOG Control :: ";
+  title += steerConfig.hostname;
+  ESPUI.begin( title.c_str() );
 
   initIdleStats();
 
