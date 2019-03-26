@@ -179,7 +179,12 @@ void autosteerWorker100Hz( void* z ) {
         // our own PID schema
       } else {
         pid.setGains( steerConfig.steeringPidKp, steerConfig.steeringPidKi, steerConfig.steeringPidKd );
-        pid.setBangBang( steerConfig.steeringPidBangOn, steerConfig.steeringPidBangOff );
+
+        if ( steerConfig.steeringPidAutoBangOnFactor ) {
+          pid.setBangBang( ( ( double )0xFF / steerSettings.Kp ) * steerConfig.steeringPidAutoBangOnFactor, steerConfig.steeringPidBangOff );
+        } else {
+          pid.setBangBang( steerConfig.steeringPidBangOn, steerConfig.steeringPidBangOff );
+        }
 
         pid.run();
 
@@ -189,8 +194,7 @@ void autosteerWorker100Hz( void* z ) {
         Serial.print( steerSetpoints.requestedSteerAngle );
         Serial.print( "pidOutput: " );
         Serial.println( pidOutput );
-        
-        
+
         double pidOutputTmp = steerConfig.invertOutput ? pidOutput : -pidOutput;
 
         switch ( initialisation.outputType ) {

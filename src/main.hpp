@@ -121,15 +121,15 @@ struct SteerConfig {
   double steeringPidKp = 200;
   double steeringPidKi = .5;
   double steeringPidKd = 1;
+  double steeringPidAutoBangOnFactor = 2;
   double steeringPidBangOn = 40;
   double steeringPidBangOff = 0.1;
   uint16_t steeringPidDflTurnIdOff = 40;
 
+
   SteerConfig::Gpio gpioWorkswitch = SteerConfig::Gpio::None;
   SteerConfig::Gpio gpioSteerswitch = SteerConfig::Gpio::None;
   bool autosteerButton = true;
-
-
 
   enum class WheelAngleSensorType : uint8_t {
     WheelAngle = 0,
@@ -142,7 +142,7 @@ struct SteerConfig {
   bool invertWheelAngleSensor = false;
   float wheelAngleCountsPerDegree = 118;
   uint16_t wheelAnglePositionZero = 5450;
-  
+
 
   float wheelAngleOffset = 0;
 
@@ -151,7 +151,7 @@ struct SteerConfig {
   float wheelAngleTieRodStroke = 190;
   float wheelAngleMinimumAngle = 37;
   float wheelAngleTrackArmLenght = 165;
-  
+
 
   bool steeringWheelEncoder = false;
   SteerConfig::Gpio gpioWheelencoderA = SteerConfig::Gpio::None;
