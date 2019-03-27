@@ -640,42 +640,42 @@ void setup( void ) {
     }
   }
 
-  // Steering Wheel Encoder Tab
-  {
-    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering Wheel Encoder", "Steering Wheel Encoder" );
-
-    ESPUI.addControl( ControlType::Switcher, "Steering Wheel Encoder*", String( steerConfig.steeringWheelEncoder ? "1" : "0" ), ControlColor::Wetasphalt, tab,
-    []( Control * control, int id ) {
-      steerConfig.steeringWheelEncoder = control->value.toInt() == 1;
-      setResetButtonToRed();
-    } );
-
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input A*", String( ( int )steerConfig.gpioWheelencoderA ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioWheelencoderA = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioInput( sel );
-      addGpioOutput( sel );
-    }
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input B*", String( ( int )steerConfig.gpioWheelencoderB ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioWheelencoderB = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioInput( sel );
-      addGpioOutput( sel );
-    }
-
-    ESPUI.addControl( ControlType::Number, "Steering Wheel Encoder max Counts", String( steerConfig.wheelEncoderPulseCountMax ), ControlColor::Peterriver, tab,
-    []( Control * control, int id ) {
-      steerConfig.wheelEncoderPulseCountMax = control->value.toInt();
-    } );
-  }
+//   // Steering Wheel Encoder Tab
+//   {
+//     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering Wheel Encoder", "Steering Wheel Encoder" );
+// 
+//     ESPUI.addControl( ControlType::Switcher, "Steering Wheel Encoder*", String( steerConfig.steeringWheelEncoder ? "1" : "0" ), ControlColor::Wetasphalt, tab,
+//     []( Control * control, int id ) {
+//       steerConfig.steeringWheelEncoder = control->value.toInt() == 1;
+//       setResetButtonToRed();
+//     } );
+// 
+//     {
+//       uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input A*", String( ( int )steerConfig.gpioWheelencoderA ), ControlColor::Wetasphalt, tab,
+//       []( Control * control, int id ) {
+//         steerConfig.gpioWheelencoderA = ( SteerConfig::Gpio )control->value.toInt();
+//         setResetButtonToRed();
+//       } );
+//       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+//       addGpioInput( sel );
+//       addGpioOutput( sel );
+//     }
+//     {
+//       uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input B*", String( ( int )steerConfig.gpioWheelencoderB ), ControlColor::Wetasphalt, tab,
+//       []( Control * control, int id ) {
+//         steerConfig.gpioWheelencoderB = ( SteerConfig::Gpio )control->value.toInt();
+//         setResetButtonToRed();
+//       } );
+//       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+//       addGpioInput( sel );
+//       addGpioOutput( sel );
+//     }
+// 
+//     ESPUI.addControl( ControlType::Number, "Steering Wheel Encoder max Counts", String( steerConfig.wheelEncoderPulseCountMax ), ControlColor::Peterriver, tab,
+//     []( Control * control, int id ) {
+//       steerConfig.wheelEncoderPulseCountMax = control->value.toInt();
+//     } );
+//   }
 
   // NTRIP/GPS Tab
   {
