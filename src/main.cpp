@@ -331,10 +331,10 @@ void setup( void ) {
         setResetButtonToRed();
       } );
       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      ESPUI.addControl( ControlType::Option, "Motor: Cytron MD30C", "1", ControlColor::Alizarin, sel );
+//       ESPUI.addControl( ControlType::Option, "Motor: Cytron MD30C", "1", ControlColor::Alizarin, sel );
       ESPUI.addControl( ControlType::Option, "Motor: IBT 2", "2", ControlColor::Alizarin, sel );
-      ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + PWM 2-Coil Valve", "3", ControlColor::Alizarin, sel );
-      ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + Danfoss Valve PVE A/H/M", "4", ControlColor::Alizarin, sel );
+//       ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + PWM 2-Coil Valve", "3", ControlColor::Alizarin, sel );
+//       ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + Danfoss Valve PVE A/H/M", "4", ControlColor::Alizarin, sel );
     }
 
     {
@@ -451,6 +451,15 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Max, "Max", String( "50" ), ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Step", String( "0.01" ), ControlColor::Peterriver, num );
+    }
+    {
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Minimum PWM", String( steerConfig.steeringPidMinPwm, 4 ), ControlColor::Peterriver, tab,
+      []( Control * control, int id ) {
+        steerConfig.steeringPidMinPwm = control->value.toDouble();
+      } );
+      ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Max, "Max", String( "255" ), ControlColor::Peterriver, num );
+      ESPUI.addControl( ControlType::Step, "Step", String( "1" ), ControlColor::Peterriver, num );
     }
 
 //     {
@@ -778,7 +787,7 @@ void setup( void ) {
    * since it is transmitted in cleartext. Just add a username and password,
    * for example begin("ESPUI Control", "username", "password")
    */
-  String title = "AOG Control :: ";
+  static String title = "AOG Control :: ";
   title += steerConfig.hostname;
   ESPUI.begin( title.c_str() );
 

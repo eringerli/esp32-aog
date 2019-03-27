@@ -76,7 +76,7 @@ void autosteerWorker100Hz( void* z ) {
 
     } else {
       steerSetpoints.enabled = true;
-      Serial.println( "Autosteer enabled" );
+//       Serial.println( "Autosteer enabled" );
 
       // use AOG-values
       if ( steerConfig.allowPidOverwrite == true ) {
@@ -110,20 +110,20 @@ void autosteerWorker100Hz( void* z ) {
           float steerAngleError = steerSetpoints.actualSteerAngle - steerSetpoints.requestedSteerAngle;
           float driveValue = steerSettings.Kp * steerAngleError * steerSettings.Ko * ( steerConfig.invertOutput ? -1 : 1 );
 
-          Serial.print( "Kp,Ko,Ki,maxIntegralValue: " );
-          Serial.print( steerSettings.Kp );
-          Serial.print( "," );
-          Serial.print( steerSettings.Ko );
-          Serial.print( "," );
-          Serial.print( steerSettings.Ki );
-          Serial.print( "," );
-          Serial.print( steerSettings.maxIntegralValue );
-          Serial.print( "," );
-
-          Serial.print( "steerAngleError: " );
-          Serial.print( steerAngleError );
-          Serial.print( ", driveValue: " );
-          Serial.print( driveValue );
+//           Serial.print( "Kp,Ko,Ki,maxIntegralValue: " );
+//           Serial.print( steerSettings.Kp );
+//           Serial.print( "," );
+//           Serial.print( steerSettings.Ko );
+//           Serial.print( "," );
+//           Serial.print( steerSettings.Ki );
+//           Serial.print( "," );
+//           Serial.print( steerSettings.maxIntegralValue );
+//           Serial.print( "," );
+// 
+//           Serial.print( "steerAngleError: " );
+//           Serial.print( steerAngleError );
+//           Serial.print( ", driveValue: " );
+//           Serial.print( driveValue );
 
           if ( driveValue > 0xFF ) {
             driveValue = 0xFF;
@@ -133,8 +133,8 @@ void autosteerWorker100Hz( void* z ) {
             driveValue = -0xFF;
           }
 
-          Serial.print( ", " );
-          Serial.print( driveValue );
+//           Serial.print( ", " );
+//           Serial.print( driveValue );
 
           if ( driveValue < 0 && driveValue > -steerSettings.minPWMValue ) {
             driveValue = -steerSettings.minPWMValue;
@@ -145,8 +145,8 @@ void autosteerWorker100Hz( void* z ) {
           }
 
 
-          Serial.print( ", " );
-          Serial.println( driveValue );
+//           Serial.print( ", " );
+//           Serial.println( driveValue );
 
 
 //           switch ( initialisation.outputType ) {
@@ -188,45 +188,51 @@ void autosteerWorker100Hz( void* z ) {
 
         pid.run();
 
-        Serial.print( "actualSteerAngle: " );
-        Serial.print( steerSetpoints.actualSteerAngle );
-        Serial.print( ", requestedSteerAngle: " );
-        Serial.print( steerSetpoints.requestedSteerAngle );
-        Serial.print( "pidOutput: " );
-        Serial.println( pidOutput );
+//         Serial.print( "actualSteerAngle: " );
+//         Serial.print( steerSetpoints.actualSteerAngle );
+//         Serial.print( ", requestedSteerAngle: " );
+//         Serial.print( steerSetpoints.requestedSteerAngle );
+//         Serial.print( "pidOutput: " );
+//         Serial.println( pidOutput );
 
-        double pidOutputTmp = steerConfig.invertOutput ? pidOutput : -pidOutput;
+        if ( pidOutput ) {
 
-        switch ( initialisation.outputType ) {
-          case SteerConfig::OutputType::SteeringMotorIBT2: {
-            if ( pidOutputTmp >= 0 ) {
-              Serial.println( "driveValue > 0" );
+          double pidOutputTmp = steerConfig.invertOutput ? pidOutput : -pidOutput;
 
-              ledcWrite( 0, pidOutputTmp );
-              ledcWrite( 1, 0 );
-            }
-
-//             if ( pidOutputTmp == 0 ) {
-//               Serial.println( "driveValue == 0" );
-//               ledcWrite( 0, 0 );
-//               ledcWrite( 1, 0 );
-//               digitalWrite( ( uint8_t )steerConfig.gpioEn, LOW );
-//             }
-
-            if ( pidOutputTmp < 0 ) {
-              Serial.println( "driveValue < 0" );
-              ledcWrite( 0, 0 );
-              ledcWrite( 1, -pidOutputTmp );
-            }
-
-            digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
+          if ( pidOutputTmp < 0 && pidOutputTmp > -steerConfig.steeringPidMinPwm ) {
+            pidOutputTmp = -steerConfig.steeringPidMinPwm;
           }
-          break;
 
-          default:
+          if ( pidOutputTmp > 0 && pidOutputTmp < steerConfig.steeringPidMinPwm ) {
+            pidOutputTmp = steerConfig.steeringPidMinPwm;
+          }
+
+          switch ( initialisation.outputType ) {
+            case SteerConfig::OutputType::SteeringMotorIBT2: {
+              if ( pidOutputTmp >= 0 ) {
+//                 Serial.println( "driveValue > 0" );
+
+                ledcWrite( 0, pidOutputTmp );
+                ledcWrite( 1, 0 );
+              }
+
+              if ( pidOutputTmp < 0 ) {
+//                 Serial.println( "driveValue < 0" );
+                ledcWrite( 0, 0 );
+                ledcWrite( 1, -pidOutputTmp );
+              }
+
+              digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
+            }
             break;
-        }
 
+            default:
+              break;
+          }
+        } else {
+          ledcWrite( 0, 0 );
+          ledcWrite( 1, 0 );
+        }
       }
     }
 
@@ -275,7 +281,13 @@ void autosteerWorker100Hz( void* z ) {
 
           // TODO read inputs
           {
-            data[8] = 0;
+            if ( steerConfig.gpioWorkswitch != SteerConfig::Gpio::None ) {
+              data[8] |= digitalRead( ( uint8_t )steerConfig.gpioWorkswitch ) ? 1 : 0;
+            }
+
+            if ( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
+              data[8] |= digitalRead( ( uint8_t )steerConfig.gpioSteerswitch ) ? 2 : 0;
+            }
           }
 
           udpSendFrom.broadcastTo( data, sizeof( data ), initialisation.portSendTo );
@@ -464,6 +476,14 @@ void initAutosteer() {
     }
 
 //     initialisation.outputType = steerConfig.outputType;
+  }
+
+  if ( steerConfig.gpioWorkswitch != SteerConfig::Gpio::None ) {
+    pinMode( ( uint8_t )steerConfig.gpioWorkswitch, INPUT_PULLUP );
+  }
+
+  if ( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
+    pinMode( ( uint8_t )steerConfig.gpioSteerswitch, INPUT_PULLUP );
   }
 
   if ( steerConfig.gpioWheelencoderA != SteerConfig::Gpio::None &&

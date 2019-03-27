@@ -119,12 +119,13 @@ struct SteerConfig {
 
   bool allowPidOverwrite = true;
   double steeringPidKp = 200;
-  double steeringPidKi = .5;
+  double steeringPidKi = 0.5;
   double steeringPidKd = 1;
   double steeringPidAutoBangOnFactor = 2;
   double steeringPidBangOn = 40;
   double steeringPidBangOff = 0.1;
-  uint16_t steeringPidDflTurnIdOff = 40;
+//   uint16_t steeringPidDflTurnIdOff = 40;
+  uint8_t steeringPidMinPwm = 20;
 
 
   SteerConfig::Gpio gpioWorkswitch = SteerConfig::Gpio::None;
@@ -146,9 +147,9 @@ struct SteerConfig {
 
   float wheelAngleOffset = 0;
 
-  float wheelAngleFirstArmLenght = 100;
-  float wheelAngleSecondArmLenght = 310;
-  float wheelAngleTieRodStroke = 190;
+  float wheelAngleFirstArmLenght = 92;
+  float wheelAngleSecondArmLenght = 308;
+  float wheelAngleTieRodStroke = 210;
   float wheelAngleMinimumAngle = 37;
   float wheelAngleTrackArmLenght = 165;
 
