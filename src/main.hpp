@@ -118,7 +118,7 @@ struct SteerConfig {
   SteerConfig::Gpio gpioEn = SteerConfig::Gpio::Esp32Gpio14;
 
   bool allowPidOverwrite = true;
-  double steeringPidKp = 200;
+  double steeringPidKp = 20;
   double steeringPidKi = 0.5;
   double steeringPidKd = 1;
   double steeringPidAutoBangOnFactor = 2;

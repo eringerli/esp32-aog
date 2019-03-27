@@ -285,15 +285,15 @@ void setup( void ) {
       addGpioInput( sel );
       addGpioOutput( sel );
     }
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Workswitch LED*", String( ( int )steerConfig.gpioWorkswitch ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioWorkswitch = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioOutput( sel );
-    }
+//     {
+//       uint16_t sel = ESPUI.addControl( ControlType::Select, "Workswitch LED*", String( ( int )steerConfig.gpioWorkswitch ), ControlColor::Wetasphalt, tab,
+//       []( Control * control, int id ) {
+//         steerConfig.gpioWorkswitch = ( SteerConfig::Gpio )control->value.toInt();
+//         setResetButtonToRed();
+//       } );
+//       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+//       addGpioOutput( sel );
+//     }
 
     ESPUI.addControl( ControlType::Switcher, "Autosteer input as Button*", String( steerConfig.autosteerButton ? "1" : "0" ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
@@ -309,15 +309,15 @@ void setup( void ) {
       addGpioInput( sel );
       addGpioOutput( sel );
     }
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Autosteer LED*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioOutput( sel );
-    }
+//     {
+//       uint16_t sel = ESPUI.addControl( ControlType::Select, "Autosteer LED*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
+//       []( Control * control, int id ) {
+//         steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
+//         setResetButtonToRed();
+//       } );
+//       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+//       addGpioOutput( sel );
+//     }
   }
 
   // Steering Tab
@@ -453,9 +453,9 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Step, "Step", String( "0.01" ), ControlColor::Peterriver, num );
     }
     {
-      uint16_t num = ESPUI.addControl( ControlType::Number, "Minimum PWM", String( steerConfig.steeringPidMinPwm, 4 ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Minimum PWM", String( steerConfig.steeringPidMinPwm ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
-        steerConfig.steeringPidMinPwm = control->value.toDouble();
+        steerConfig.steeringPidMinPwm = control->value.toInt();
       } );
       ESPUI.addControl( ControlType::Min, "Min", String( "0" ), ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Max, "Max", String( "255" ), ControlColor::Peterriver, num );
