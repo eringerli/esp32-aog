@@ -286,7 +286,20 @@ void autosteerWorker100Hz( void* z ) {
             }
 
             if ( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
-              data[8] |= digitalRead( ( uint8_t )steerConfig.gpioSteerswitch ) ? 2 : 0;
+              if ( steerConfig.autosteerButton == true ) {
+                static bool lastInputState = false;
+                static bool steerState = false;
+                bool currentState = digitalRead( ( uint8_t )steerConfig.gpioSteerswitch );
+
+                if ( currentState != lastInputState && currentState == true ) {
+                  steerState = !steerState;
+                  lastInputState = currentState;
+                }
+
+                data[8] |= steerState ? 2 : 0;
+              } else {
+                data[8] |= digitalRead( ( uint8_t )steerConfig.gpioSteerswitch ) ? 2 : 0;
+              }
             }
           }
 
