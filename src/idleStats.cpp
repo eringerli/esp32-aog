@@ -27,20 +27,29 @@
 volatile uint16_t idleCtrCore0 = 0;
 volatile uint16_t idleCtrCore1 = 0;
 void core0IdleWorker( void* z ) {
+  constexpr TickType_t xFrequency = 1;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
   while ( 1 ) {
     idleCtrCore0++;
-    vTaskDelay( 1 );
+    vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
 }
 
 void core1IdleWorker( void* z ) {
+  constexpr TickType_t xFrequency = 1;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
   while ( 1 ) {
     idleCtrCore1++;
-    vTaskDelay( 1 );
+    vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
 }
 
 void idleStatsWorker( void* z ) {
+  constexpr TickType_t xFrequency = 1000;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
   while ( 1 ) {
     String str( "Core0: " );
     str += 1000 - idleCtrCore0;
@@ -52,7 +61,8 @@ void idleStatsWorker( void* z ) {
     ESPUI.updateLabel( labelLoad, str );
     idleCtrCore0 = 0;
     idleCtrCore1 = 0;
-    vTaskDelay( 1000 );
+
+    vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
 }
 
