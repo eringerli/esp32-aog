@@ -119,7 +119,7 @@ void autosteerWorker100Hz( void* z ) {
 //           Serial.print( "," );
 //           Serial.print( steerSettings.maxIntegralValue );
 //           Serial.print( "," );
-// 
+//
 //           Serial.print( "steerAngleError: " );
 //           Serial.print( steerAngleError );
 //           Serial.print( ", driveValue: " );
@@ -149,31 +149,31 @@ void autosteerWorker100Hz( void* z ) {
 //           Serial.println( driveValue );
 
 
-//           switch ( initialisation.outputType ) {
-//             case SteerConfig::OutputType::SteeringMotorIBT2: {
-//               if ( driveValue > 0 ) {
-//                 Serial.println( "driveValue > 0" );
-//
-//                 ledcWrite( 0, driveValue );
-//                 ledcWrite( 1, 0 );
-//               }
-//
-//               if ( driveValue == 0 ) {
-//                 Serial.println( "driveValue == 0" );
-//                 ledcWrite( 0, 0 );
-//                 ledcWrite( 1, 0 );
-//               }
-//
-//               if ( driveValue < 0 ) {
-//                 Serial.println( "driveValue < 0" );
-//                 ledcWrite( 0, 0 );
-//                 ledcWrite( 1, -driveValue );
-//               }
-//
-//               digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
-//             }
-//             break;
-//           }
+          switch ( initialisation.outputType ) {
+            case SteerConfig::OutputType::SteeringMotorIBT2: {
+              if ( driveValue > 0 ) {
+                Serial.println( "driveValue > 0" );
+
+                ledcWrite( 0, driveValue );
+                ledcWrite( 1, 0 );
+              }
+
+              if ( driveValue == 0 ) {
+                Serial.println( "driveValue == 0" );
+                ledcWrite( 0, 0 );
+                ledcWrite( 1, 0 );
+              }
+
+              if ( driveValue < 0 ) {
+                Serial.println( "driveValue < 0" );
+                ledcWrite( 0, 0 );
+                ledcWrite( 1, -driveValue );
+              }
+
+              digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
+            }
+            break;
+          }
         }
 
         // our own PID schema
