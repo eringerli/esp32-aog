@@ -44,12 +44,12 @@ AsyncServer* server;
 static std::vector<AsyncClient*> clients;
 
 static void handleError( void* arg, AsyncClient* client, int8_t error ) {
-  Serial.printf( "\n connection error %s from client %s \n", client->errorToString( error ), client->remoteIP().toString().c_str() );
+//   Serial.printf( "\n connection error %s from client %s \n", client->errorToString( error ), client->remoteIP().toString().c_str() );
 }
 
 static void handleData( void* arg, AsyncClient* client, void* data, size_t len ) {
-  Serial.printf( "\n data received from client %s \n", client->remoteIP().toString().c_str() );
-  Serial.write( ( uint8_t* )data, len );
+//   Serial.printf( "\n data received from client %s \n", client->remoteIP().toString().c_str() );
+//   Serial.write( ( uint8_t* )data, len );
 
 //  // reply to client
 //  if (client->space() > 32 && client->canSend()) {
@@ -61,7 +61,7 @@ static void handleData( void* arg, AsyncClient* client, void* data, size_t len )
 }
 
 static void handleDisconnect( void* arg, AsyncClient* client ) {
-  Serial.printf( "\n client %s disconnected \n", client->remoteIP().toString().c_str() );
+//   Serial.printf( "\n client %s disconnected \n", client->remoteIP().toString().c_str() );
 
   // remove client from vector
   clients.erase( std::remove_if( clients.begin(), clients.end(), [client]( AsyncClient * itClient ) {
@@ -70,10 +70,10 @@ static void handleDisconnect( void* arg, AsyncClient* client ) {
 }
 
 static void handleTimeOut( void* arg, AsyncClient* client, uint32_t time ) {
-  Serial.printf( "\n client ACK timeout ip: %s \n", client->remoteIP().toString().c_str() );
+//   Serial.printf( "\n client ACK timeout ip: %s \n", client->remoteIP().toString().c_str() );
 }
 static void handleNewClient( void* arg, AsyncClient* client ) {
-  Serial.printf( "\n new client has been connected to server, ip: %s", client->remoteIP().toString().c_str() );
+//   Serial.printf( "\n new client has been connected to server, ip: %s", client->remoteIP().toString().c_str() );
 
   // add to list
   clients.push_back( client );
@@ -261,14 +261,10 @@ void ntripWorker( void* z ) {
     initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionMountpoint;
   }
 
-  Serial.print( "rtkCorrectionURL: " );
-  Serial.println( initialisation.rtkCorrectionURL );
-
-
   if ( initialisation.rtkCorrectionURL.length() <= 8 ) {
     // update WebUI
     {
-      labelNtripHandle->value = String( "Cannot connect to " ) + String( initialisation.rtkCorrectionURL );
+      labelNtripHandle->value = "Cannot connect to " + initialisation.rtkCorrectionURL;
       labelNtripHandle->color = ControlColor::Carrot;
       ESPUI.updateControl( labelNtripHandle );
     }
@@ -281,26 +277,19 @@ void ntripWorker( void* z ) {
   }
 
   for ( ;; ) {
-    Serial.print( "NTRIP" );
-
-    Serial.print( "[HTTP] GET URL: " );
-    Serial.println( initialisation.rtkCorrectionURL );
     HTTPClient http;
     http.begin( initialisation.rtkCorrectionURL );
     http.setUserAgent( "NTRIP CoffeetracNTRIPClient" );
-    Serial.println( "[HTTP] GET()" );
     int httpCode = http.GET();
-    Serial.printf( "[HTTP] GET1... code: %d\n", httpCode );
 
     if ( httpCode > 0 ) {
       // HTTP header has been send and Server response header has been handled
-      Serial.printf( "[HTTP] GET2... code: %d\n", httpCode );
 
       // file found at server
       if ( httpCode == HTTP_CODE_OK ) {
         // update WebUI
         {
-          labelNtripHandle->value = String( "Connected to " ) + String( initialisation.rtkCorrectionURL );
+          labelNtripHandle->value = "Connected to " + initialisation.rtkCorrectionURL;
           labelNtripHandle->color = ControlColor::Emerald;
           ESPUI.updateControl( labelNtripHandle );
         }
@@ -323,18 +312,7 @@ void ntripWorker( void* z ) {
             int c = stream->readBytes( buff, ( ( size > buffSize ) ? buffSize : size ) );
 
             // write it to Serial
-//             Serial1.write( buff, c );
             Serial2.write( buff, c );
-//           uint16_t cnt = Serial2.available();
-
-//           Serial.print( "[HTTP] Read bytes: " );
-//           Serial.print( c );
-//           Serial.print( ":" );
-//           Serial.print( size );
-//           Serial.print( ", Serial2: " );
-//           Serial.print( cnt );
-//           Serial.print( ", millis: " );
-//           Serial.println( millis() );
           }
 
           if ( millis() > timeoutSendGGA ) {
@@ -371,8 +349,8 @@ void ntripWorker( void* z ) {
 
                   {
                     Control* handle = ESPUI.getControl( textNmeaToSend );
-
-                    handle->value = String( steerConfig.rtkCorrectionNmeaToSend );
+                    handle->value.reserve( 80 );
+                    handle->value = steerConfig.rtkCorrectionNmeaToSend;
                     ESPUI.updateControl( handle );
                   }
                 }
@@ -391,20 +369,15 @@ void ntripWorker( void* z ) {
           vTaskDelay( 1 );
         }
 
-        Serial.println();
-        Serial.print( "[HTTP] connection closed or file end.\n" );
-
       }
     }
 
     // update WebUI
     {
-      labelNtripHandle->value = String( "Cannot connect to " ) + String( initialisation.rtkCorrectionURL );
+      labelNtripHandle->value = "Cannot connect to " + initialisation.rtkCorrectionURL;
       labelNtripHandle->color = ControlColor::Carrot;
       ESPUI.updateControl( labelNtripHandle );
     }
-
-    Serial.printf( "[HTTP] GET... failed, error: %s\n", http.errorToString( httpCode ).c_str() );
 
     http.end();
     vTaskDelay( 1000 );

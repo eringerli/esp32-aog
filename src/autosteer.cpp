@@ -279,27 +279,88 @@ void autosteerWorker100Hz( void* z ) {
             data[7] = ( uint16_t )roll;
           }
 
-          // TODO read inputs
+          // read inputs
           {
-            if ( steerConfig.gpioWorkswitch != SteerConfig::Gpio::None ) {
-              data[8] |= digitalRead( ( uint8_t )steerConfig.gpioWorkswitch ) ? 1 : 0;
+            if ( steerConfig.workswitchType != SteerConfig::WorkswitchType::None ) {
+              uint16_t value = 0;
+              uint16_t threshold = 0;
+              uint16_t hysteresis = 0;
+
+              switch ( steerConfig.workswitchType ) {
+                case SteerConfig::WorkswitchType::Gpio:
+                  value =  digitalRead( ( uint8_t )steerConfig.gpioWorkswitch ) ? 1 : 0;
+                  threshold = 1;
+                  hysteresis = 0;
+                  break;
+
+                case SteerConfig::WorkswitchType::RearHitchPosition:
+                  value = steerCanData.rearHitchPosition;
+                  threshold = steerConfig.canBusHitchThreshold;
+                  hysteresis = steerConfig.canBusHitchThresholdHysteresis;
+                  break;
+
+                case SteerConfig::WorkswitchType::FrontHitchPosition:
+                  value = steerCanData.frontHitchPosition;
+                  threshold = steerConfig.canBusHitchThreshold;
+                  hysteresis = steerConfig.canBusHitchThresholdHysteresis;
+                  break;
+
+                case SteerConfig::WorkswitchType::RearPtoRpm:
+                  value = steerCanData.rearPtoRpm;
+                  threshold = steerConfig.canBusRpmThreshold;
+                  hysteresis = steerConfig.canBusRpmThresholdHysteresis;
+                  break;
+
+                case SteerConfig::WorkswitchType::FrontPtoRpm:
+                  value = steerCanData.frontPtoRpm;
+                  threshold = steerConfig.canBusRpmThreshold;
+                  hysteresis = steerConfig.canBusRpmThresholdHysteresis;
+                  break;
+
+                case SteerConfig::WorkswitchType::MotorRpm:
+                  value = steerCanData.motorRpm;
+                  threshold = steerConfig.canBusRpmThreshold;
+                  hysteresis = steerConfig.canBusRpmThresholdHysteresis;
+                  break;
+              }
+
+              static bool workswitchState = false;
+
+              if ( value >= threshold ) {
+                workswitchState = true;
+              }
+
+              if ( value < ( threshold - hysteresis ) ) {
+                workswitchState = false;
+              }
+
+              data[8] |= workswitchState ? 1 : 0;
             }
 
             if ( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
-              if ( steerConfig.autosteerButton == true ) {
-                static bool lastInputState = false;
-                static bool steerState = false;
-                bool currentState = digitalRead( ( uint8_t )steerConfig.gpioSteerswitch );
+              static time_t lastRisingEdge = 0;
+              static bool lastInputState = false;
 
-                if ( currentState != lastInputState && currentState == true ) {
-                  steerState = !steerState;
-                  lastInputState = currentState;
+              static bool steerswitchState = false;
+
+              bool currentState = digitalRead( ( uint8_t )steerConfig.gpioSteerswitch );
+
+              if ( currentState != lastInputState ) {
+                // rising edge
+                if ( currentState == true ) {
+                  steerswitchState = !steerswitchState;
+                  lastRisingEdge = millis();
                 }
 
-                data[8] |= steerState ? 2 : 0;
-              } else {
-                data[8] |= digitalRead( ( uint8_t )steerConfig.gpioSteerswitch ) ? 2 : 0;
+                // falling edge
+                if ( currentState == false ) {
+                  if ( lastRisingEdge + steerConfig.autoRecogniseSteerGpioAsSwitchOrButton < millis() ) {
+                    steerswitchState = false;
+                  }
+                }
               }
+
+              data[8] |= steerswitchState ? 2 : 0;
             }
           }
 
@@ -370,7 +431,6 @@ void initAutosteer() {
       // see pgn.xlsx in https://github.com/farmerbriantee/AgOpenGPS/tree/master/AgOpenGPS_Dev
       switch ( pgn ) {
         case 0x7FFE: {
-//           Serial.println( "Autosteer 0x7FFE" );
           steerSetpoints.relais = data[2];
           steerSetpoints.speed = ( float )data[3] / 4;
           steerSetpoints.distanceFromLine = data[5] + ( data[4] << 8 );
@@ -381,7 +441,6 @@ void initAutosteer() {
         break;
 
         case 0x7FFC: {
-//           Serial.println( "Autosteer 0x7FFC" );
           steerSettings.Kp = ( float )data[2] * 1.0; // read Kp from AgOpenGPS
           steerSettings.Ki = ( float )data[3] * 0.001; // read Ki from AgOpenGPS
           steerSettings.Kd = ( float )data[4] * 1.0; // read Kd from AgOpenGPS
@@ -396,7 +455,6 @@ void initAutosteer() {
         break;
 
         case 0x7FF6: {
-//           Serial.println( "Autosteer 0x7FF6" );
           steerMachineControl.pedalControl = data[2];
           steerMachineControl.speed = ( float )data[3] / 4;
           steerMachineControl.relais = data[4];
@@ -468,7 +526,7 @@ void initAutosteer() {
           ledcWrite( 1, 0 );
 
           {
-            labelStatusOutputHandle->value = String( "Output configured" );
+            labelStatusOutputHandle->value = "Output configured";
             labelStatusOutputHandle->color = ControlColor::Emerald;
             ESPUI.updateControl( labelStatusOutputHandle );
           }
@@ -476,7 +534,7 @@ void initAutosteer() {
           initialisation.outputType = SteerConfig::OutputType::SteeringMotorIBT2;
         } else {
           {
-            labelStatusOutputHandle->value = String( "GPIOs not correctly defined" );
+            labelStatusOutputHandle->value = "GPIOs not correctly defined";
             labelStatusOutputHandle->color = ControlColor::Carrot;
             ESPUI.updateControl( labelStatusOutputHandle );
           }

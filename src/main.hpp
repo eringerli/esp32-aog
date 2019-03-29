@@ -44,10 +44,9 @@ extern uint16_t labelRoll;
 extern uint16_t labelWheelAngle;
 extern uint16_t textNmeaToSend;
 
-extern uint16_t labelWheelAngleDisplacement;
-
 extern uint16_t labelStatusOutput;
 extern uint16_t labelStatusAdc;
+extern uint16_t labelStatusCan;
 extern uint16_t labelStatusImu;
 extern uint16_t labelStatusInclino;
 extern uint16_t labelStatusGps;
@@ -117,7 +116,7 @@ struct SteerConfig {
   SteerConfig::Gpio gpioDir = SteerConfig::Gpio::Esp32Gpio32;
   SteerConfig::Gpio gpioEn = SteerConfig::Gpio::Esp32Gpio14;
 
-  bool allowPidOverwrite = true;
+  bool allowPidOverwrite = false;
   double steeringPidKp = 20;
   double steeringPidKi = 0.5;
   double steeringPidKd = 1;
@@ -128,9 +127,18 @@ struct SteerConfig {
   uint8_t steeringPidMinPwm = 20;
 
 
+  enum class WorkswitchType : uint8_t {
+    None = 0,
+    Gpio,
+    RearHitchPosition,
+    FrontHitchPosition,
+    RearPtoRpm,
+    FrontPtoRpm,
+    MotorRpm
+  } workswitchType = WorkswitchType::None;
   SteerConfig::Gpio gpioWorkswitch = SteerConfig::Gpio::None;
   SteerConfig::Gpio gpioSteerswitch = SteerConfig::Gpio::None;
-  bool autosteerButton = true;
+  uint16_t autoRecogniseSteerGpioAsSwitchOrButton = 500;
 
   enum class WheelAngleSensorType : uint8_t {
     WheelAngle = 0,
@@ -152,7 +160,6 @@ struct SteerConfig {
   float wheelAngleTieRodStroke = 210;
   float wheelAngleMinimumAngle = 37;
   float wheelAngleTrackArmLenght = 165;
-
 
   bool steeringWheelEncoder = false;
   SteerConfig::Gpio gpioWheelencoderA = SteerConfig::Gpio::None;
@@ -185,6 +192,19 @@ struct SteerConfig {
 
   float rollOffset = 0;
 
+  bool canBusEnabled = false;
+  SteerConfig::Gpio canBusRx = SteerConfig::Gpio::Esp32Gpio26;
+  SteerConfig::Gpio canBusTx = SteerConfig::Gpio::Esp32Gpio25;
+  enum class CanBusSpeed : uint16_t {
+    Speed250kbs = 250,
+    Speed500kbs = 500
+  } canBusSpeed = CanBusSpeed::Speed500kbs;
+
+  uint8_t canBusHitchThreshold = 50;
+  uint8_t canBusHitchThresholdHysteresis = 6;
+
+  uint16_t canBusRpmThreshold = 400;
+  uint16_t canBusRpmThresholdHysteresis = 100;
 
   enum class RtkCorrectionType : uint8_t {
     None = 0,
@@ -222,6 +242,8 @@ struct SteerConfig {
   uint16_t portSendFrom = 5577;
   uint16_t portListenTo = 8888;
   uint16_t portSendTo = 9999;
+
+//   char dummy[100];
 
 };
 extern SteerConfig steerConfig;
@@ -304,7 +326,15 @@ struct SteerImuInclinometerData {
 };
 extern SteerImuInclinometerData steerImuInclinometerData;
 
-
+struct SteerCanData {
+  float speed;
+  uint16_t motorRpm;
+  uint8_t frontHitchPosition;
+  uint8_t rearHitchPosition;
+  uint16_t frontPtoRpm;
+  uint16_t rearPtoRpm;
+};
+extern SteerCanData steerCanData;
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -348,6 +378,7 @@ extern void writeEeprom();
 extern void initIdleStats();
 extern void initSensors();
 extern void initRtkCorrection();
+extern void initCan();
 extern void initAutosteer();
 
 #endif

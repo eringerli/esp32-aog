@@ -189,7 +189,7 @@ void sensorWorker1HzPoller( void* z ) {
         Control* handle = ESPUI.getControl( labelStatusImu );
 
         if ( system == 3 && gyro == 3 && accel == 3 && mag == 3 ) {
-          handle->value = String( "BNO055 found & calibrated" );
+          handle->value = "BNO055 found & calibrated";
           handle->color = ControlColor::Emerald;
 
           // save to eeprom every 250s
@@ -208,10 +208,17 @@ void sensorWorker1HzPoller( void* z ) {
             writeEeprom();
           }
         } else {
-          handle->value = String( "BNO055 found but not calibrated: S:G:A:M=" ) + String( system ) +
-                          String( ":" ) + String( gyro ) +
-                          String( ":" ) + String( accel ) +
-                          String( ":" ) + String( mag );
+          String str;
+          str.reserve( 40 );
+          str += "BNO055 found but not calibrated: S:G:A:M=";
+          str += String( system );
+          str += ":";
+          str += String( gyro );
+          str += ":";
+          str += String( accel );
+          str += ":";
+          str += String( mag );
+          handle->value = str;
           handle->color = ControlColor::Carrot;
         }
 
@@ -400,7 +407,7 @@ void sensorWorker100HzPoller( void* z ) {
         if ( steerConfig.invertWheelAngleSensor ) {
           wheelAngleTmp *= ( float ) -1;
         }
-        
+
         wheelAngleTmp -= steerConfig.wheelAngleOffset;
 
         wheelAngleTmp = wheelAngleSensorFilter.step( wheelAngleTmp );
@@ -421,18 +428,34 @@ void sensorWorker100HzPoller( void* z ) {
         loopCounter = 0;
         {
           Control* handle = ESPUI.getControl( labelHeading );
-          handle->value = String( ( float )steerImuInclinometerData.bnoAverageHeading ) + String( "°" );
+
+          String str;
+          str.reserve( 30 );
+          str += String( ( float )steerImuInclinometerData.bnoAverageHeading );
+          str += "°";
+          handle->value = str;
           ESPUI.updateControl( handle );
         }
         {
           Control* handle = ESPUI.getControl( labelWheelAngle );
-          handle->value = String( ( float )steerSetpoints.actualSteerAngle ) + String( "°, Raw " ) +
-                          String( ( float )steerSetpoints.wheelAngleRaw ) + String( "°" );
-          ESPUI.updateControl( handle );
-        }
-        {
-          Control* handle = ESPUI.getControl( labelWheelAngleDisplacement );
-          handle->value = String( ( float )steerSetpoints.wheelAngleCurrentDisplacement ) + String( "mm" );
+          String str;
+          str.reserve( 30 );
+
+          if ( steerConfig.wheelAngleSensorType == SteerConfig::WheelAngleSensorType::TieRodDisplacement ) {
+            str += String( ( float )steerSetpoints.actualSteerAngle );
+            str += "°, Raw ";
+            str += String( ( float )steerSetpoints.wheelAngleRaw );
+            str += "°, Displacement ";
+            str += String( ( float )steerSetpoints.wheelAngleCurrentDisplacement );
+            str += "mm";
+          } else {
+            str += String( ( float )steerSetpoints.actualSteerAngle );
+            str += "°, Raw ";
+            str += String( ( float )steerSetpoints.wheelAngleRaw );
+            str += "°";
+          }
+
+          handle->value = str;
           ESPUI.updateControl( handle );
         }
       }
@@ -508,7 +531,10 @@ void sensorWorker10HzPoller( void* z ) {
         if ( loopCounter++ > 9 ) {
           loopCounter = 0;
           Control* handle = ESPUI.getControl( labelRoll );
-          handle->value = String( steerImuInclinometerData.roll ) + String( "°" );
+          String str;
+          str.reserve( 10 );
+          str = String( steerImuInclinometerData.roll ) + "°";
+          handle->value = str;
           ESPUI.updateControl( handle );
         }
       }
@@ -525,7 +551,7 @@ void initSensors() {
     Control* handle = ESPUI.getControl( labelStatusInclino );
 
     if ( mma.begin() ) {
-      handle->value = String( "MMA8451 found & initialized" );
+      handle->value = "MMA8451 found & initialized";
       handle->color = ControlColor::Emerald;
       initialisation.inclinoType = SteerConfig::InclinoType::MMA8451;
 
@@ -533,7 +559,7 @@ void initSensors() {
       mma.setDataRate( MMA8451_DATARATE_200_HZ );
       mma.setFifoSettings( MMA8451_FIFO_CIRCULAR );
     } else {
-      handle->value = String( "MMA8451 not found" );
+      handle->value = "MMA8451 not found";
       handle->color = ControlColor::Alizarin;
       initialisation.inclinoType = SteerConfig::InclinoType::None;
     }
@@ -545,7 +571,7 @@ void initSensors() {
     Control* handle = ESPUI.getControl( labelStatusImu );
 
     if ( bno.begin() ) {
-      handle->value = String( "BNO055 found & initialized" );
+      handle->value = "BNO055 found & initialized";
       handle->color = ControlColor::Emerald;
       initialisation.imuType = SteerConfig::ImuType::BNO055;
 
@@ -557,7 +583,7 @@ void initSensors() {
 
       bno.setExtCrystalUse( true );
     } else {
-      handle->value = String( "BNO055 not found" );
+      handle->value = "BNO055 not found";
       handle->color = ControlColor::Alizarin;
       initialisation.imuType = SteerConfig::ImuType::None;
     }
@@ -578,7 +604,7 @@ void initSensors() {
     ads.setSPS( ADS1115_DR_860SPS );
 
     Control* handle = ESPUI.getControl( labelStatusAdc );
-    handle->value = String( "ADC1115 initialized" );
+    handle->value = "ADC1115 initialized";
     handle->color = ControlColor::Emerald;
     initialisation.wheelAngleInput = steerConfig.wheelAngleInput;
     ESPUI.updateControl( handle );

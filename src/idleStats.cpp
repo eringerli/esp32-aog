@@ -51,14 +51,19 @@ void idleStatsWorker( void* z ) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while ( 1 ) {
-    String str( "Core0: " );
+    String str;
+    str.reserve( 40 );
+    str += ( "Core0: " );
     str += 1000 - idleCtrCore0;
     str += "‰<br/>";
     str += "Core1: ";
     str += 1000 - idleCtrCore1;
     str += "‰";
 
-    ESPUI.updateLabel( labelLoad, str );
+    Control* labelLoadHandle = ESPUI.getControl( labelLoad );
+    labelLoadHandle->value = str;
+    ESPUI.updateControl( labelLoadHandle );
+
     idleCtrCore0 = 0;
     idleCtrCore1 = 0;
 
