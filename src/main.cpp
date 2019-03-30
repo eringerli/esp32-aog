@@ -550,10 +550,10 @@ void setup( void ) {
         setResetButtonToRed();
       } );
       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-//       ESPUI.addControl( ControlType::Option, "Motor: Cytron MD30C", "1", ControlColor::Alizarin, sel );
+      ESPUI.addControl( ControlType::Option, "Motor: Cytron MD30C", "1", ControlColor::Alizarin, sel );
       ESPUI.addControl( ControlType::Option, "Motor: IBT 2", "2", ControlColor::Alizarin, sel );
-//       ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + PWM 2-Coil Valve", "3", ControlColor::Alizarin, sel );
-//       ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + Danfoss Valve PVE A/H/M", "4", ControlColor::Alizarin, sel );
+      ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + PWM 2-Coil Valve", "3", ControlColor::Alizarin, sel );
+      ESPUI.addControl( ControlType::Option, "Hydraulic: IBT 2 + Danfoss Valve PVE A/H/M", "4", ControlColor::Alizarin, sel );
     }
 
     {
@@ -589,23 +589,23 @@ void setup( void ) {
       steerConfig.invertOutput = control->value.toInt() == 1;
     } );
 
-    {
-      uint16_t num = ESPUI.addControl( ControlType::Slider, "PWM Frequency", String( steerConfig.pwmFrequency ), ControlColor::Peterriver, tab,
-      []( Control * control, int id ) {
-        steerConfig.pwmFrequency = control->value.toInt();
-
-        switch ( initialisation.outputType ) {
-          case SteerConfig::OutputType::SteeringMotorIBT2: {
-            ledcWriteTone( 0, steerConfig.pwmFrequency );
-            ledcWriteTone( 1, steerConfig.pwmFrequency );
-          }
-          break;
-        }
-      } );
-      ESPUI.addControl( ControlType::Min, "Min", "1000", ControlColor::Peterriver, num );
-      ESPUI.addControl( ControlType::Max, "Max", "5000", ControlColor::Peterriver, num );
-      ESPUI.addControl( ControlType::Step, "Step", "100", ControlColor::Peterriver, num );
-    }
+//     {
+//       uint16_t num = ESPUI.addControl( ControlType::Slider, "PWM Frequency", String( steerConfig.pwmFrequency ), ControlColor::Peterriver, tab,
+//       []( Control * control, int id ) {
+//         steerConfig.pwmFrequency = control->value.toInt();
+//
+//         switch ( initialisation.outputType ) {
+//           case SteerConfig::OutputType::SteeringMotorIBT2: {
+//             ledcWriteTone( 0, steerConfig.pwmFrequency );
+//             ledcWriteTone( 1, steerConfig.pwmFrequency );
+//           }
+//           break;
+//         }
+//       } );
+//       ESPUI.addControl( ControlType::Min, "Min", "1000", ControlColor::Peterriver, num );
+//       ESPUI.addControl( ControlType::Max, "Max", "5000", ControlColor::Peterriver, num );
+//       ESPUI.addControl( ControlType::Step, "Step", "100", ControlColor::Peterriver, num );
+//     }
   }
 
   // Steering PID Tab
