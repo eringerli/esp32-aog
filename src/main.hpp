@@ -64,6 +64,7 @@ struct SteerConfig {
     Default     = -1,
     None        = 0,
     Esp32Gpio4  = 4,
+    Esp32Gpio5  = 5,
     Esp32Gpio12 = 12,
     Esp32Gpio13 = 13,
     Esp32Gpio14 = 14,
@@ -77,6 +78,7 @@ struct SteerConfig {
     Esp32Gpio32 = 32,
     Esp32Gpio33 = 33,
     Esp32Gpio34 = 34,
+    Esp32Gpio35 = 35,
     Esp32Gpio36 = 36,
     Esp32Gpio39 = 39
   };
