@@ -60,7 +60,8 @@ extern SemaphoreHandle_t i2cMutex;
 
 struct SteerConfig {
 
-  enum class Gpio : uint8_t {
+  enum class Gpio : int8_t {
+    Default     = -1,
     None        = 0,
     Esp32Gpio4  = 4,
     Esp32Gpio12 = 12,
@@ -68,6 +69,8 @@ struct SteerConfig {
     Esp32Gpio14 = 14,
     Esp32Gpio15 = 15,
     Esp32Gpio21 = 21,
+    Esp32Gpio22 = 22,
+    Esp32Gpio23 = 23,
     Esp32Gpio25 = 25,
     Esp32Gpio26 = 26,
     Esp32Gpio27 = 27,
@@ -167,6 +170,9 @@ struct SteerConfig {
 
   uint8_t wheelEncoderPulseCountMax = 3;
 
+  SteerConfig::Gpio gpioSDA = SteerConfig::Gpio::Esp32Gpio23;
+  SteerConfig::Gpio gpioSCL = SteerConfig::Gpio::Esp32Gpio22;
+  uint32_t i2cBusSpeed = 400000;
   enum class ImuType : uint8_t {
     None = 0,
     BNO055 = 1
