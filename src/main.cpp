@@ -86,6 +86,7 @@ void writeEeprom() {
   EEPROM.writeUShort( ( uint16_t )EepromAddresses::SizeOfConfig, ( uint16_t )sizeof( SteerConfig ) );
   EEPROM.put( ( uint16_t )EepromAddresses::SteerSettings, steerConfig );
   EEPROM.put( ( uint16_t )EepromAddresses::Bno055CalibrationData, bno055CalibrationData );
+  EEPROM.put( ( uint16_t )EepromAddresses::Fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationData );
   EEPROM.commit();
 }
 
@@ -152,6 +153,7 @@ void setup( void ) {
     Serial.println( "Read from EEPROM" );
     EEPROM.get( ( uint16_t )EepromAddresses::SteerSettings, steerConfig );
     EEPROM.get( ( uint16_t )EepromAddresses::Bno055CalibrationData, bno055CalibrationData );
+    EEPROM.get( ( uint16_t )EepromAddresses::Fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationData );
   } else {
     Serial.println( "Not read from EEPROM" );
     writeEeprom();
@@ -169,7 +171,6 @@ void setup( void ) {
   Serial.print( steerConfig.ssid );
   Serial.print( " with password " );
   Serial.print( steerConfig.password );
-
 
   {
     uint8_t timeout = 5;
@@ -210,12 +211,14 @@ void setup( void ) {
   Serial.print( "IP address: " );
   Serial.println( WiFi.getMode() == WIFI_AP ? WiFi.softAPIP() : WiFi.localIP() );
 
-// Comment in to update the Files in SPIFFS
+
+  steerConfig.sendCalibrationDataFromImu = false;
 
   labelLoad       = ESPUI.addControl( ControlType::Label, "Load:", "", ControlColor::Turquoise );
   labelHeading    = ESPUI.addControl( ControlType::Label, "Heading:", "0°", ControlColor::Emerald );
   labelRoll       = ESPUI.addControl( ControlType::Label, "Roll:", "0°", ControlColor::Emerald );
   labelWheelAngle = ESPUI.addControl( ControlType::Label, "Wheel Angle:", "0°", ControlColor::Emerald );
+//   graphWheelAngle = ESPUI.addControl( ControlType::Graph, "Wheel Angle:", "", ControlColor::Emerald );
 
   buttonReset = ESPUI.addControl( ControlType::Button, "Store the Settings", "Apply", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
@@ -731,6 +734,13 @@ void setup( void ) {
       } );
       ESPUI.addControl( ControlType::Option, "No IMU", "0", ControlColor::Alizarin, sel );
       ESPUI.addControl( ControlType::Option, "BNO055", "1", ControlColor::Alizarin, sel );
+      ESPUI.addControl( ControlType::Option, "FXOS8700/FXAS21002", "2", ControlColor::Alizarin, sel );
+    }
+    {
+      ESPUI.addControl( ControlType::Switcher, "Send Calibration Data from IMU to USB", steerConfig.sendCalibrationDataFromImu ? "1" : "0", ControlColor::Peterriver, tab,
+      []( Control * control, int id ) {
+        steerConfig.sendCalibrationDataFromImu = control->value.toInt() == 1;
+      } );
     }
     {
       uint16_t sel = ESPUI.addControl( ControlType::Select, "IMU Orientation", String( ( int )steerConfig.imuOrientation ), ControlColor::Peterriver, tab,
@@ -752,6 +762,7 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "No Inclinometer", "0", ControlColor::Alizarin, sel );
       ESPUI.addControl( ControlType::Option, "MMA8451", "1", ControlColor::Alizarin, sel );
 //       ESPUI.addControl( ControlType::Option, "DOGS2", "2", ControlColor::Alizarin, sel );
+      ESPUI.addControl( ControlType::Option, "FXOS8700/FXAS21002", "3", ControlColor::Alizarin, sel );
     }
     {
       uint16_t sel = ESPUI.addControl( ControlType::Select, "Inclinometer Orientation (Y-axis points:)", String( ( int )steerConfig.inclinoOrientation ), ControlColor::Peterriver, tab,

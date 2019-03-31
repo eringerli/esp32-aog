@@ -345,7 +345,7 @@ void autosteerWorker100Hz( void* z ) {
             uint16_t heading;
 
             if ( initialisation.imuType != SteerConfig::ImuType::None ) {
-              heading = ( float )steerImuInclinometerData.bnoAverageHeading * 16;
+              heading = ( float )steerImuInclinometerData.heading * 16;
             } else {
               heading = 9999;
             }
@@ -467,7 +467,7 @@ void autosteerWorker100Hz( void* z ) {
               uint16_t heading;
 
               if ( initialisation.imuType != SteerConfig::ImuType::None ) {
-                heading = ( float )steerImuInclinometerData.bnoAverageHeading * 16;
+                heading = ( float )steerImuInclinometerData.heading * 16;
               } else {
                 heading = 9999;
               }

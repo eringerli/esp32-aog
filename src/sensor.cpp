@@ -26,9 +26,17 @@
 // #include <Accelerometer.h>
 // #include <AccelerometerMMA8451.h>
 
+#include <Adafruit_Sensor.h>
+
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+
+#include <Adafruit_FXAS21002C.h>
+#include <Adafruit_FXOS8700.h>
+
+#include <Mahony.h>
+#include <Madgwick.h>
 
 #include <Adafruit_ADS1015.h>
 
@@ -41,9 +49,15 @@
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 Adafruit_BNO055 bno = Adafruit_BNO055( 55 );
+Adafruit_FXAS21002C fxas2100 = Adafruit_FXAS21002C( 0x0021002C );
+Adafruit_FXOS8700 fxos8700 = Adafruit_FXOS8700( 0x8700A, 0x8700B );
 Adafruit_ADS1115 ads = Adafruit_ADS1115( 0x48 );
 
+Madgwick filter;
+// Mahony filter;
+
 adafruit_bno055_offsets_t bno055CalibrationData;
+Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData;
 
 SteerImuInclinometerData steerImuInclinometerData;
 
@@ -99,7 +113,30 @@ class  FilterBuLp2_2 {
         ( v[0] + v[2] )
         + 2 * v[1];
     }
-} bnoFilterHeading;
+} filterRoll, filterPitch, filterHeading;
+
+// http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=1000&frequencyLow=5&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
+//Low pass butterworth filter order=2 alpha1=0.005
+class  FilterBuLp2_4 {
+  public:
+    FilterBuLp2_4() {
+      v[0] = 0.0;
+      v[1] = 0.0;
+    }
+  private:
+    float v[3];
+  public:
+    float step( float x ) { //class II
+      v[0] = v[1];
+      v[1] = v[2];
+      v[2] = ( 2.413590490419614820e-4 * x )
+             + ( -0.95654367651120375537 * v[0] )
+             + ( 1.95557824031503590945 * v[1] );
+      return
+        ( v[0] + v[2] )
+        + 2 * v[1];
+    }
+} fxosFilterRoll, fxosFilterPitch, fxosFilterHeading;
 
 // http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=100&frequencyLow=5&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
 //Low pass butterworth filter order=2 alpha1=0.05
@@ -253,14 +290,14 @@ void sensorWorker100HzPoller( void* z ) {
         xSemaphoreGive( i2cMutex );
       }
 
-      float heading = bnoFilterHeading.step( euler.x() );
+      float heading = filterHeading.step( euler.x() );
       heading += ( uint16_t )steerConfig.imuOrientation * 90;
 
       if ( heading > 360 ) {
         heading -= 360;
       }
 
-      steerImuInclinometerData.bnoAverageHeading += heading;
+      steerImuInclinometerData.heading = heading;
 
 
 //       Serial.print( "Current Temperature: " );
@@ -291,6 +328,141 @@ void sensorWorker100HzPoller( void* z ) {
 //
 //       Serial.print( "Bno Millis: " );
 //       Serial.println( millis() - start );
+    }
+
+    if ( initialisation.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
+         initialisation.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
+
+      sensors_event_t gyro_event;
+      sensors_event_t accel_event;
+      sensors_event_t mag_event;
+
+      // Get new data samples
+      if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+        fxas2100.getEvent( &gyro_event );
+        fxos8700.getEvent( &accel_event, &mag_event );
+        xSemaphoreGive( i2cMutex );
+      }
+
+      if ( steerConfig.sendCalibrationDataFromImu ) {
+        // Print the sensor data
+        Serial.print( "Raw:" );
+        Serial.print( fxos8700.accel_raw.x );
+        Serial.print( ',' );
+        Serial.print( fxos8700.accel_raw.y );
+        Serial.print( ',' );
+        Serial.print( fxos8700.accel_raw.z );
+        Serial.print( ',' );
+        Serial.print( fxas2100.raw.x );
+        Serial.print( ',' );
+        Serial.print( fxas2100.raw.y );
+        Serial.print( ',' );
+        Serial.print( fxas2100.raw.z );
+        Serial.print( ',' );
+        Serial.print( fxos8700.mag_raw.x );
+        Serial.print( ',' );
+        Serial.print( fxos8700.mag_raw.y );
+        Serial.print( ',' );
+        Serial.print( fxos8700.mag_raw.z );
+        Serial.println();
+
+        if ( Serial.available() >= 68 ) {
+          uint8_t data[68];
+          Serial.readBytes( data, sizeof( data ) );
+          float dataFloat[16];
+          memcpy( dataFloat, data + 2, 64 );
+
+          fxos8700Fxas21002CalibrationData.mag_offsets[0] = dataFloat[6];
+          fxos8700Fxas21002CalibrationData.mag_offsets[1] = dataFloat[7];
+          fxos8700Fxas21002CalibrationData.mag_offsets[2] = dataFloat[8];
+
+          fxos8700Fxas21002CalibrationData.mag_field_strength = dataFloat[9];
+
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][0] = dataFloat[10];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][1] = dataFloat[13];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][2] = dataFloat[14];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][0] = dataFloat[13];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][1] = dataFloat[11];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][2] = dataFloat[15];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][0] = dataFloat[14];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][1] = dataFloat[15];
+          fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][2] = dataFloat[12];
+
+          fxos8700Fxas21002CalibrationData.gyro_zero_offsets[0] = dataFloat[0];
+          fxos8700Fxas21002CalibrationData.gyro_zero_offsets[1] = dataFloat[1];
+          fxos8700Fxas21002CalibrationData.gyro_zero_offsets[2] = dataFloat[2];
+        }
+      }
+
+      // Apply mag offset compensation (base values in uTesla)
+      float x = mag_event.magnetic.x - fxos8700Fxas21002CalibrationData.mag_offsets[0];
+      float y = mag_event.magnetic.y - fxos8700Fxas21002CalibrationData.mag_offsets[1];
+      float z = mag_event.magnetic.z - fxos8700Fxas21002CalibrationData.mag_offsets[2];
+
+      // Apply mag soft iron error compensation
+      float mx = x * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][0] +
+                 y * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][1] +
+                 z * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][2];
+      float my = x * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][0] +
+                 y * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][1] +
+                 z * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][2];
+      float mz = x * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][0] +
+                 y * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][1] +
+                 z * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][2];
+
+      // Apply gyro zero-rate error compensation
+      float gx = gyro_event.gyro.x + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[0];
+      float gy = gyro_event.gyro.y + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[1];
+      float gz = gyro_event.gyro.z + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[2];
+
+      // The filter library expects gyro data in degrees/s, but adafruit sensor
+      // uses rad/s so we need to convert them first (or adapt the filter lib
+      // where they are being converted)
+      gx *= 57.2958F;
+      gy *= 57.2958F;
+      gz *= 57.2958F;
+
+      // Update the filter
+      filter.update( gx, gy, gz,
+                     accel_event.acceleration.x, accel_event.acceleration.y, accel_event.acceleration.z,
+                     mx, my, mz );
+
+      float roll = filterRoll.step( filter.getRoll() );
+      float pitch = filterPitch.step( filter.getPitch() );
+      float heading = filterHeading.step( filter.getYaw() );
+
+
+      switch ( steerConfig.inclinoOrientation ) {
+        case SteerConfig::InclinoOrientation::Forwards:
+          steerImuInclinometerData.roll = -pitch;
+          steerImuInclinometerData.pitch = roll;
+          break;
+
+        case SteerConfig::InclinoOrientation::Backwards:
+          steerImuInclinometerData.roll = pitch;
+          steerImuInclinometerData.pitch = -roll;
+          break;
+
+        case SteerConfig::InclinoOrientation::Left:
+          steerImuInclinometerData.roll = -roll;
+          steerImuInclinometerData.pitch = -pitch;
+          break;
+
+        case SteerConfig::InclinoOrientation::Right:
+          steerImuInclinometerData.roll = roll;
+          steerImuInclinometerData.pitch = pitch;
+          break;
+      }
+
+      steerImuInclinometerData.roll -= steerConfig.rollOffset;
+
+      heading += ( uint16_t )steerConfig.imuOrientation * 90;
+
+      if ( heading > 360 ) {
+        heading -= 360;
+      }
+
+      steerImuInclinometerData.heading = heading;
     }
 
 
@@ -489,20 +661,6 @@ void sensorWorker10HzPoller( void* z ) {
       }
 
       steerImuInclinometerData.roll -= steerConfig.rollOffset;
-
-      {
-        static uint8_t loopCounter = 0;
-
-        if ( loopCounter++ > 9 ) {
-          loopCounter = 0;
-          Control* handle = ESPUI.getControl( labelRoll );
-          String str;
-          str.reserve( 10 );
-          str = String( steerImuInclinometerData.roll ) + "°";
-          handle->value = str;
-          ESPUI.updateControl( handle );
-        }
-      }
     }
 
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
@@ -556,6 +714,41 @@ void initSensors() {
     ESPUI.updateControl( handle );
   }
 
+  if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
+       steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002
+     ) {
+    Control* handle = ESPUI.getControl( labelStatusImu );
+
+    if ( fxas2100.begin() && fxos8700.begin( ACCEL_RANGE_2G ) ) {
+
+      handle->value = "FXAS2100/FXOS8700 found & initialized";
+      handle->color = ControlColor::Emerald;
+
+      if ( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
+        initialisation.imuType = steerConfig.imuType;
+      }
+
+      if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
+        initialisation.inclinoType = steerConfig.inclinoType;
+      }
+
+      filter.begin( 100 );
+    } else {
+      handle->value = "FXAS2100/FXOS8700 not found";
+      handle->color = ControlColor::Alizarin;
+
+      if ( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
+        initialisation.imuType = SteerConfig::ImuType::None;
+      }
+
+      if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
+        initialisation.inclinoType = SteerConfig::InclinoType::None;
+      }
+    }
+
+    ESPUI.updateControl( handle );
+  }
+
   // initialise ads1115 everytime, even if not avaible (no answer in the init -> just sending)
   {
     ads.setGain( GAIN_TWOTHIRDS );   // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV (default)
@@ -575,10 +768,15 @@ void initSensors() {
     ESPUI.updateControl( handle );
   }
 
-  xTaskCreate( sensorWorker1HzPoller, "sensorWorker1HzPoller", 4096, NULL, 1, NULL );
-  xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 4096, NULL, 5, NULL );
-  xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 4096, NULL, 2, NULL );
-}
+  if ( steerConfig.imuType == SteerConfig::ImuType::BNO055 ) {
+    xTaskCreate( sensorWorker1HzPoller, "sensorWorker1HzPoller", 4096, NULL, 1, NULL );
+  }
 
+  if ( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
+    xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 4096, NULL, 5, NULL );
+  }
+
+  xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 4096, NULL, 6, NULL );
+}
 
 
