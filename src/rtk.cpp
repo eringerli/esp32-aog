@@ -183,11 +183,11 @@ void nmeaWorker( void* z ) {
         str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Lon:</td><td style='text-align:left; padding: 0px 5px;'>";
         str += String( ( float )nmea.getLongitude() / 1000000, 6 );
         str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Alt:</td><td style='text-align:left; padding: 0px 5px;'>";
-        str += String( ( float )nmea.getAltitude() / 1000 );
+        str += ( float )nmea.getAltitude() / 1000;
         str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>HDOP:</td><td style='text-align:left; padding: 0px 5px;'>";
-        str += String( ( float )nmea.getHDOP() / 10 );
+        str += ( float )nmea.getHDOP() / 10;
         str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Age:</td><td style='text-align:left; padding: 0px 5px;'>";
-        str += String( ( float )nmea.getAgeOfDGPS() / 10 );
+        str += ( float )nmea.getAgeOfDGPS() / 10;
         str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Quality:</td><td style='text-align:left; padding: 0px 5px;'>";
 
         switch ( nmea.getQuality() ) {

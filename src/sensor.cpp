@@ -211,13 +211,13 @@ void sensorWorker1HzPoller( void* z ) {
           String str;
           str.reserve( 40 );
           str += "BNO055 found but not calibrated: S:G:A:M=";
-          str += String( system );
+          str += system;
           str += ":";
-          str += String( gyro );
+          str += gyro;
           str += ":";
-          str += String( accel );
+          str += accel;
           str += ":";
-          str += String( mag );
+          str += mag;
           handle->value = str;
           handle->color = ControlColor::Carrot;
         }
@@ -333,23 +333,12 @@ void sensorWorker100HzPoller( void* z ) {
       }
 
       {
-//         Serial.print( "ADS: " );
-//         Serial.print( wheelAngleTmp );
-
         if ( steerConfig.allowWheelAngleCenterAndCountsOverwrite ) {
           wheelAngleTmp -= steerSettings.wheelAnglePositionZero;
-//           Serial.print( ", " );
-//           Serial.print( wheelAngleTmp );
           wheelAngleTmp /= steerSettings.wheelAngleCountsPerDegree;
-//           Serial.print( ", " );
-//           Serial.print( wheelAngleTmp );
         } else {
           wheelAngleTmp -= steerConfig.wheelAnglePositionZero;
-//           Serial.print( ", " );
-//           Serial.print( wheelAngleTmp );
           wheelAngleTmp /= steerConfig.wheelAngleCountsPerDegree;
-//           Serial.print( ", " );
-//           Serial.print( wheelAngleTmp );
         }
 
         steerSetpoints.wheelAngleRaw = wheelAngleTmp;
@@ -358,22 +347,13 @@ void sensorWorker100HzPoller( void* z ) {
           if ( steerConfig.wheelAngleFirstArmLenght != 0 && steerConfig.wheelAngleSecondArmLenght != 0 &&
                steerConfig.wheelAngleTrackArmLenght != 0 && steerConfig.wheelAngleTieRodStroke != 0 ) {
 
-//             Serial.print( "Wheel Angle Displacement: " );
-//             Serial.print( wheelAngleTmp );
-
             auto getDisplacementFromAngle = []( float angle ) {
-//               Serial.print( ",angle " );
-//               Serial.print( angle );
               // a: 2. arm, b: 1. arm, c: abstand drehpunkt wineklsensor und anschlagpunt 2. arm an der spurstange
               // gegenwinkel: winkel zwischen 1. arm und spurstange
               double alpha = PI - radians( angle );
-//               Serial.print( ",alpha " );
-//               Serial.print( alpha );
 
               // winkel zwischen spurstange und 2. arm
               double gamma = PI - alpha - ( asin( steerConfig.wheelAngleFirstArmLenght * sin( alpha ) / steerConfig.wheelAngleSecondArmLenght ) );
-//               Serial.print( ",gamma " );
-//               Serial.print( gamma );
 
               // auslenkung
               return steerConfig.wheelAngleSecondArmLenght * sin( gamma ) / sin( alpha );
@@ -381,26 +361,13 @@ void sensorWorker100HzPoller( void* z ) {
 
             steerSetpoints.wheelAngleCurrentDisplacement = getDisplacementFromAngle( wheelAngleTmp );
 
-//             Serial.print( ", " );
-//             Serial.print( steerSetpoints.wheelAngleCurrentDisplacement );
-
-//             Serial.print( ",getDisplacementFromAngle " );
-//             Serial.print( getDisplacementFromAngle( steerConfig.wheelAngleMinimumAngle ) );
             double relativeDisplacementToStraightAhead =
               // real displacement
               steerSetpoints.wheelAngleCurrentDisplacement -
               // calculate middle of displacement -
               ( getDisplacementFromAngle( steerConfig.wheelAngleMinimumAngle ) + ( steerConfig.wheelAngleTieRodStroke / 2 ) );
 
-//             Serial.print( ", " );
-//             Serial.print( relativeDisplacementToStraightAhead );
-
-
             wheelAngleTmp = degrees( asin( relativeDisplacementToStraightAhead / steerConfig.wheelAngleTrackArmLenght ) );
-
-//             Serial.print( ", " );
-//             Serial.println( wheelAngleTmp );
-
           }
         }
 
@@ -412,11 +379,7 @@ void sensorWorker100HzPoller( void* z ) {
 
         wheelAngleTmp = wheelAngleSensorFilter.step( wheelAngleTmp );
         steerSetpoints.actualSteerAngle = wheelAngleTmp;
-//         Serial.print( ", " );
-//         Serial.println( wheelAngleTmp );
         wasAverage += wheelAngleTmp;
-//         Serial.print( ", " );
-//         Serial.println( ( float )wasAverage );
       }
 
     }
@@ -428,12 +391,14 @@ void sensorWorker100HzPoller( void* z ) {
         loopCounter = 0;
         {
           Control* handle = ESPUI.getControl( labelHeading );
-
-          String str;
-          str.reserve( 30 );
-          str += String( ( float )steerImuInclinometerData.bnoAverageHeading );
-          str += "°";
-          handle->value = str;
+          handle->value = ( float )steerImuInclinometerData.heading;
+          handle->value += "°";
+          ESPUI.updateControl( handle );
+        }
+        {
+          Control* handle = ESPUI.getControl( labelRoll );
+          handle->value = ( float )steerImuInclinometerData.roll;
+          handle->value += "°";
           ESPUI.updateControl( handle );
         }
         {
@@ -442,16 +407,16 @@ void sensorWorker100HzPoller( void* z ) {
           str.reserve( 30 );
 
           if ( steerConfig.wheelAngleSensorType == SteerConfig::WheelAngleSensorType::TieRodDisplacement ) {
-            str += String( ( float )steerSetpoints.actualSteerAngle );
+            str += ( float )steerSetpoints.actualSteerAngle;
             str += "°, Raw ";
-            str += String( ( float )steerSetpoints.wheelAngleRaw );
+            str += ( float )steerSetpoints.wheelAngleRaw;
             str += "°, Displacement ";
-            str += String( ( float )steerSetpoints.wheelAngleCurrentDisplacement );
+            str += ( float )steerSetpoints.wheelAngleCurrentDisplacement;
             str += "mm";
           } else {
-            str += String( ( float )steerSetpoints.actualSteerAngle );
+            str += ( float )steerSetpoints.actualSteerAngle;
             str += "°, Raw ";
-            str += String( ( float )steerSetpoints.wheelAngleRaw );
+            str += ( float )steerSetpoints.wheelAngleRaw;
             str += "°";
           }
 

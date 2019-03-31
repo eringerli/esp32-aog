@@ -50,15 +50,17 @@ void idleStatsWorker( void* z ) {
   constexpr TickType_t xFrequency = 1000;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  while ( 1 ) {
     String str;
     str.reserve( 40 );
-    str += ( "Core0: " );
+  while ( 1 ) {
+    str = "Core0: ";
     str += 1000 - idleCtrCore0;
     str += "‰<br/>";
     str += "Core1: ";
     str += 1000 - idleCtrCore1;
-    str += "‰";
+    str += "‰<br/>Uptime: ";
+    str += millis() / 1000;
+    str += "s";
 
     Control* labelLoadHandle = ESPUI.getControl( labelLoad );
     labelLoadHandle->value = str;
