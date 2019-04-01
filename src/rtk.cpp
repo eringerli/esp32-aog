@@ -32,13 +32,45 @@
 
 #include <MicroNMEA.h>
 
+#include <NMEAGPS.h>
+#include <ublox/ubxNMEA.h>
+
 #include "main.hpp"
 
-String lastGN;
 
-constexpr size_t nmeaBufferSize = 120;
-char nmeaBuffer[nmeaBufferSize];
-MicroNMEA nmea( nmeaBuffer, nmeaBufferSize );
+#if !defined( NMEAGPS_PARSE_GGA ) & !defined( NMEAGPS_PARSE_GLL ) & \
+    !defined( NMEAGPS_PARSE_GSA ) & !defined( NMEAGPS_PARSE_GSV ) & \
+    !defined( NMEAGPS_PARSE_RMC ) & !defined( NMEAGPS_PARSE_VTG ) & \
+    !defined( NMEAGPS_PARSE_ZDA ) & !defined( NMEAGPS_PARSE_GST ) & \
+    !defined( NMEAGPS_PARSE_PUBX_00 ) & !defined( NMEAGPS_PARSE_PUBX_04 )
+
+  #error No NMEA sentences enabled: no fix data available.
+
+#endif
+
+#if !defined( NMEAGPS_PARSE_PUBX_00 ) & !defined( NMEAGPS_PARSE_PUBX_04 )
+  #error No PUBX messages enabled!  You must enable one or more in PUBX_cfg.h!
+#endif
+
+#ifndef NMEAGPS_DERIVED_TYPES
+  #error You must "#define NMEAGPS_DERIVED_TYPES" in NMEAGPS_cfg.h!
+#endif
+
+#ifndef NMEAGPS_EXPLICIT_MERGING
+  #error You must define NMEAGPS_EXPLICIT_MERGING in NMEAGPS_cfg.h
+#endif
+
+#ifdef NMEAGPS_INTERRUPT_PROCESSING
+  #error You must *NOT* define NMEAGPS_INTERRUPT_PROCESSING in NMEAGPS_cfg.h!
+#endif
+    
+String lastGN;
+static ubloxNMEA gps; // This parses received characters
+gps_fix currentGpsFix;
+
+constexpr size_t NmeaBufferSize = 120;
+char nmeaBuffer[NmeaBufferSize];
+MicroNMEA nmea( nmeaBuffer, NmeaBufferSize );
 
 AsyncServer* server;
 static std::vector<AsyncClient*> clients;
@@ -88,8 +120,8 @@ static void handleNewClient( void* arg, AsyncClient* client ) {
 void nmeaWorker( void* z ) {
 
   String sentence;
-  sentence.reserve( nmeaBufferSize );
-  lastGN.reserve( sizeof( SteerConfig::rtkCorrectionNmeaToSend ) );
+  sentence.reserve( NmeaBufferSize );
+  lastGN.reserve( NmeaBufferSize );
 
   if ( steerConfig.sendNmeaDataTcpPort != 0 ) {
     server = new AsyncServer( steerConfig.sendNmeaDataTcpPort ); // start listening on tcp port 7050
@@ -106,6 +138,13 @@ void nmeaWorker( void* z ) {
     for ( uint16_t i = 0; i < cnt; i++ ) {
       char c = Serial2.read();
 
+      if ( steerConfig.mergeImuWithGps ) {
+        if (gps.decode( c ) == NMEAGPS::DECODE_COMPLETED) {
+          currentGpsFix = gps.fix();
+          currentGpsFix.calculateNorthAndEastVelocityFromSpeedAndHeading();
+        }
+      }
+
       if ( nmea.process( c ) ) {
         if ( strcmp( nmea.getMessageID(), "GGA" ) == 0 ) {
           lastGN = nmea.getSentence();
@@ -114,6 +153,17 @@ void nmeaWorker( void* z ) {
         if ( steerConfig.sendNmeaDataTo != SteerConfig::SendNmeaDataTo::None ) {
 
           sentence = nmea.getSentence();
+
+//           {
+//             gpsData.TOW;
+//             gpsData.vn;
+//             gpsData.ve;
+//             gpsData.vd;
+//             gpsData.lat;
+//             gpsData.lon;
+//             gpsData.alt;
+//           }
+
 
 //           // snap of the checksum, if it exists
 //           if ( uint8_t occurence = sentence.lastIndexOf( '*' ) > 0 ) {
@@ -143,6 +193,8 @@ void nmeaWorker( void* z ) {
             break;
 
             case SteerConfig::SendNmeaDataTo::Serial: {
+              Serial.print( millis() );
+              Serial.print( ": " );
               Serial.print( sentence );
             }
             break;

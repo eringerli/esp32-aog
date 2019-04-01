@@ -38,6 +38,8 @@
 #include <Mahony.h>
 #include <Madgwick.h>
 
+#include <uNavINS.h>
+
 #include <Adafruit_ADS1015.h>
 
 #include <ESPUI.h>
@@ -55,6 +57,8 @@ Adafruit_ADS1115 ads = Adafruit_ADS1115( 0x48 );
 
 Madgwick filter;
 // Mahony filter;
+
+uNavINS imuGpsFusionFilter;
 
 adafruit_bno055_offsets_t bno055CalibrationData;
 Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData;
@@ -279,14 +283,10 @@ void sensorWorker100HzPoller( void* z ) {
 
   for ( ;; ) {
     if ( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
-
       imu::Vector<3> euler;
-//       imu::Quaternion quat;
 
       if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
-//         temp = bno.getTemp();
         euler = bno.getVector( Adafruit_BNO055::VECTOR_EULER );
-//         quat = bno.getQuat();
         xSemaphoreGive( i2cMutex );
       }
 
@@ -298,36 +298,6 @@ void sensorWorker100HzPoller( void* z ) {
       }
 
       steerImuInclinometerData.heading = heading;
-
-
-//       Serial.print( "Current Temperature: " );
-//       Serial.println( temp );
-//
-//       /* Display the floating point data */
-// //       Serial.print( "Euler angle X: " );
-// //       Serial.print( euler.x() );
-// //       Serial.print( "filtered: " );
-// //       Serial.print( heading );
-// //       Serial.print( "avg: " );
-// //       Serial.println( (float)steerImuInclinometerData.bnoAverageHeading );
-//       Serial.print( " Y: " );
-//       Serial.print( euler.y() );
-//       Serial.print( " Z: " );
-//       Serial.println( euler.z() );
-//
-//
-//       // Quaternion data
-//       Serial.print( "qW: " );
-//       Serial.print( quat.w(), 4 );
-//       Serial.print( " qX: " );
-//       Serial.print( quat.x(), 4 );
-//       Serial.print( " qY: " );
-//       Serial.print( quat.y(), 4 );
-//       Serial.print( " qZ: " );
-//       Serial.println( quat.z(), 4 );
-//
-//       Serial.print( "Bno Millis: " );
-//       Serial.println( millis() - start );
     }
 
     if ( initialisation.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
@@ -422,47 +392,74 @@ void sensorWorker100HzPoller( void* z ) {
       gy *= 57.2958F;
       gz *= 57.2958F;
 
-      // Update the filter
-      filter.update( gx, gy, gz,
-                     accel_event.acceleration.x, accel_event.acceleration.y, accel_event.acceleration.z,
-                     mx, my, mz );
+      if ( steerConfig.mergeImuWithGps ) {
+        imuGpsFusionFilter.update(
+          currentGpsFix.dateTime_cs, currentGpsFix.velocity_north / 100, currentGpsFix.velocity_east / 100, currentGpsFix.velocity_down / 100,
+          ( ( double )currentGpsFix.latitudeL() / 10000000 ) * PI / 180.0f, ( ( double )currentGpsFix.longitudeL() / 10000000 ) * PI / 180.0f, currentGpsFix.altitude(),
+          gx, -gy, gz,
+          accel_event.acceleration.x, accel_event.acceleration.y, accel_event.acceleration.z,
+          mx, my, mz );
+        
+        float roll, pitch, heading;
+        if ( steerConfig.lpfPose ) {
+          roll = filterRoll.step( degrees( imuGpsFusionFilter.getRoll_rad() ) );
+          pitch = filterPitch.step( degrees( imuGpsFusionFilter.getPitch_rad() ) );
+          heading = filterHeading.step( degrees( imuGpsFusionFilter.getHeading_rad() ) );
+        } else {
+          roll = degrees( imuGpsFusionFilter.getRoll_rad() );
+          pitch = degrees( imuGpsFusionFilter.getPitch_rad() );
+          heading = degrees( imuGpsFusionFilter.getHeading_rad() );
+        }
 
-      float roll = filterRoll.step( filter.getRoll() );
-      float pitch = filterPitch.step( filter.getPitch() );
-      float heading = filterHeading.step( filter.getYaw() );
+        steerImuInclinometerData.roll = roll;
+        steerImuInclinometerData.pitch = pitch;
+        steerImuInclinometerData.roll -= steerConfig.rollOffset;
+        steerImuInclinometerData.heading = heading;
+
+      } else {
+        // Update the filter
+        filter.update( gx, gy, gz,
+                       accel_event.acceleration.x, accel_event.acceleration.y, accel_event.acceleration.z,
+                       mx, my, mz );
+
+        float roll = filterRoll.step( filter.getRoll() );
+        float pitch = filterPitch.step( filter.getPitch() );
+        float heading = filterHeading.step( filter.getYaw() );
 
 
-      switch ( steerConfig.inclinoOrientation ) {
-        case SteerConfig::InclinoOrientation::Forwards:
-          steerImuInclinometerData.roll = -pitch;
-          steerImuInclinometerData.pitch = roll;
-          break;
+        switch ( steerConfig.inclinoOrientation ) {
+          case SteerConfig::InclinoOrientation::Forwards:
+            steerImuInclinometerData.roll = -pitch;
+            steerImuInclinometerData.pitch = roll;
+            break;
 
-        case SteerConfig::InclinoOrientation::Backwards:
-          steerImuInclinometerData.roll = pitch;
-          steerImuInclinometerData.pitch = -roll;
-          break;
+          case SteerConfig::InclinoOrientation::Backwards:
+            steerImuInclinometerData.roll = pitch;
+            steerImuInclinometerData.pitch = -roll;
+            break;
 
-        case SteerConfig::InclinoOrientation::Left:
-          steerImuInclinometerData.roll = -roll;
-          steerImuInclinometerData.pitch = -pitch;
-          break;
+          case SteerConfig::InclinoOrientation::Left:
+            steerImuInclinometerData.roll = -roll;
+            steerImuInclinometerData.pitch = -pitch;
+            break;
 
-        case SteerConfig::InclinoOrientation::Right:
-          steerImuInclinometerData.roll = roll;
-          steerImuInclinometerData.pitch = pitch;
-          break;
+          case SteerConfig::InclinoOrientation::Right:
+            steerImuInclinometerData.roll = roll;
+            steerImuInclinometerData.pitch = pitch;
+            break;
+        }
+
+        steerImuInclinometerData.roll -= steerConfig.rollOffset;
+
+        heading += ( uint16_t )steerConfig.imuOrientation * 90;
+
+        if ( heading > 360 ) {
+          heading -= 360;
+        }
+
+        steerImuInclinometerData.heading = heading;
       }
 
-      steerImuInclinometerData.roll -= steerConfig.rollOffset;
-
-      heading += ( uint16_t )steerConfig.imuOrientation * 90;
-
-      if ( heading > 360 ) {
-        heading -= 360;
-      }
-
-      steerImuInclinometerData.heading = heading;
     }
 
 

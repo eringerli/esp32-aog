@@ -783,6 +783,12 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Roll Max", "10", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Roll Step", "0.01", ControlColor::Peterriver, num );
     }
+    {
+      ESPUI.addControl( ControlType::Switcher, "Merge IMU with GPS (only with $PUBX04 enabled and FXOS8700/FXAS21002)*", steerConfig.mergeImuWithGps ? "1" : "0", ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.mergeImuWithGps = control->value.toInt() == 1;
+      } );
+    }
   }
 
 //   // Steering Wheel Encoder Tab

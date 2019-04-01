@@ -35,6 +35,8 @@
 
 #include "average.hpp"
 
+#include <NMEAGPS.h>
+
 #ifndef MAIN_HPP
 #define MAIN_HPP
 
@@ -203,6 +205,9 @@ struct SteerConfig {
   bool sendCalibrationDataFromImu = false;
 
   float rollOffset = 0;
+
+  bool mergeImuWithGps = false;
+  bool lpfPose = false;
 
   bool canBusEnabled = false;
   SteerConfig::Gpio canBusRx = SteerConfig::Gpio::Esp32Gpio26;
@@ -387,6 +392,7 @@ struct SteerCanData {
 };
 extern SteerCanData steerCanData;
 
+extern gps_fix currentGpsFix;
 
 ///////////////////////////////////////////////////////////////////////////
 // external Libraries
