@@ -146,6 +146,8 @@ struct SteerConfig {
   SteerConfig::Gpio gpioWorkswitch = SteerConfig::Gpio::None;
   SteerConfig::Gpio gpioSteerswitch = SteerConfig::Gpio::None;
   uint16_t autoRecogniseSteerGpioAsSwitchOrButton = 500;
+  bool workswitchActiveLow = true;
+  bool steerswitchActiveLow = true;
 
   enum class WheelAngleSensorType : uint8_t {
     WheelAngle = 0,
@@ -158,7 +160,6 @@ struct SteerConfig {
   bool invertWheelAngleSensor = false;
   float wheelAngleCountsPerDegree = 118;
   uint16_t wheelAnglePositionZero = 5450;
-
 
   float wheelAngleOffset = 0;
 

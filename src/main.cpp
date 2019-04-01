@@ -389,6 +389,16 @@ void setup( void ) {
 //     }
 
     {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Autosteer switch/button Gpio*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioInput( sel );
+      addGpioOutput( sel );
+    }
+    {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Auto recognise Autosteer GPIO as Switch [ms]",  String( steerConfig.autoRecogniseSteerGpioAsSwitchOrButton ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.autoRecogniseSteerGpioAsSwitchOrButton = control->value.toInt();
@@ -398,14 +408,10 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Step, "Step", "100", ControlColor::Peterriver, num );
     }
     {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Autosteer switch/button Gpio*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
+      ESPUI.addControl( ControlType::Switcher, "Steerswitch Active Low", steerConfig.steerswitchActiveLow ? "1" : "0", ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
-        steerConfig.gpioSteerswitch = ( SteerConfig::Gpio )control->value.toInt();
-        setResetButtonToRed();
+        steerConfig.steerswitchActiveLow = control->value.toInt() == 1;
       } );
-      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-      addGpioInput( sel );
-      addGpioOutput( sel );
     }
 //     {
 //       uint16_t sel = ESPUI.addControl( ControlType::Select, "Autosteer LED*", String( ( int )steerConfig.gpioSteerswitch ), ControlColor::Wetasphalt, tab,
@@ -427,6 +433,12 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
       addGpioInput( sel );
       addGpioOutput( sel );
+    }
+    {
+      ESPUI.addControl( ControlType::Switcher, "Workswitch Active Low", steerConfig.workswitchActiveLow ? "1" : "0", ControlColor::Peterriver, tab,
+      []( Control * control, int id ) {
+        steerConfig.workswitchActiveLow = control->value.toInt() == 1;
+      } );
     }
 
   }
@@ -784,9 +796,15 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Step, "Roll Step", "0.01", ControlColor::Peterriver, num );
     }
     {
-      ESPUI.addControl( ControlType::Switcher, "Merge IMU with GPS (only with $PUBX04 enabled and FXOS8700/FXAS21002)*", steerConfig.mergeImuWithGps ? "1" : "0", ControlColor::Wetasphalt, tab,
+      ESPUI.addControl( ControlType::Switcher, "Merge IMU with GPS (only with $PUBX04 enabled and FXOS8700/FXAS21002)", steerConfig.mergeImuWithGps ? "1" : "0", ControlColor::Wetasphalt, tab,
       []( Control * control, int id ) {
         steerConfig.mergeImuWithGps = control->value.toInt() == 1;
+      } );
+    }
+    {
+      ESPUI.addControl( ControlType::Switcher, "Use Low-Pass-Filter for fused POSE", steerConfig.lpfPose ? "1" : "0", ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.lpfPose = control->value.toInt() == 1;
       } );
     }
   }
