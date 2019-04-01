@@ -33,3 +33,10 @@ Read this file through, before starting to half-ass it. It is not so hard to get
 
 # Uploading
 1. click on upload (the tile with the arrow)
+
+# Updating the repository
+As there are sometimes added repositories as well, enter the following to update:
+1. go to the esp32-aog repository
+1. `git pull`
+1. `git submodule init`
+1. `git submodule update`
