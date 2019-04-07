@@ -425,6 +425,10 @@ void autosteerWorker100Hz( void* z ) {
                 workswitchState = false;
               }
 
+              if ( steerConfig.workswitchActiveLow ) {
+                workswitchState = ! workswitchState;
+              }
+
               data[8] |= workswitchState ? 1 : 0;
             }
 
@@ -449,6 +453,10 @@ void autosteerWorker100Hz( void* z ) {
                     steerswitchState = false;
                   }
                 }
+              }
+
+              if ( steerConfig.steerswitchActiveLow ) {
+                steerswitchState = ! steerswitchState;
               }
 
               data[8] |= steerswitchState ? 2 : 0;
