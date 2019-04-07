@@ -31,11 +31,12 @@ Read this file through, before starting to half-ass it. It is not so hard to get
 1. open the created folder above from the platformio home
 1. click build (the tile with the tick), the missing dependencies should be installed automaticaly
 
-# Uploading
+# Upload to the ESP32
+1. connect the ESP32 over USB
 1. click on upload (the tile with the arrow)
 
 # Updating the repository
-As there are sometimes added repositories as well, enter the following to update:
+As there are sometimes new repositories/submodules added, enter the following to update:
 1. go to the esp32-aog repository
 1. `git pull`
 1. `git submodule init`
