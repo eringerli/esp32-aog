@@ -35,8 +35,6 @@
 
 #include "average.hpp"
 
-#include <NMEAGPS.h>
-
 #ifndef MAIN_HPP
 #define MAIN_HPP
 
@@ -378,8 +376,6 @@ struct SteerCanData {
   uint16_t rearPtoRpm;
 };
 extern SteerCanData steerCanData;
-
-extern gps_fix currentGpsFix;
 
 ///////////////////////////////////////////////////////////////////////////
 // external Libraries
