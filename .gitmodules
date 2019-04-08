@@ -3,7 +3,7 @@
 	url = https://github.com/soligen2010/Adafruit_ADS1X15.git
 [submodule "lib/Adafruit_BNO055"]
 	path = lib/Adafruit_BNO055
-	url = https://github.com/adafruit/Adafruit_BNO055.git
+	url = https://github.com/eringerli/Adafruit_BNO055.git
 [submodule "lib/Adafruit_MMA8451_Library"]
 	path = lib/Adafruit_MMA8451_Library
 	url = https://github.com/eringerli/Adafruit_MMA8451_Library.git
