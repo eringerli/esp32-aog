@@ -31,6 +31,7 @@
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <utility/quaternion.h>
 
 #include <Adafruit_FXAS21002C.h>
 #include <Adafruit_FXOS8700.h>
@@ -38,9 +39,8 @@
 #include <Mahony.h>
 #include <Madgwick.h>
 
-#include <uNavINS.h>
-
 #include <Adafruit_ADS1015.h>
+
 
 #include <ESPUI.h>
 
@@ -55,10 +55,8 @@ Adafruit_FXAS21002C fxas2100 = Adafruit_FXAS21002C( 0x0021002C );
 Adafruit_FXOS8700 fxos8700 = Adafruit_FXOS8700( 0x8700A, 0x8700B );
 Adafruit_ADS1115 ads = Adafruit_ADS1115( 0x48 );
 
-Madgwick filter;
+Madgwick ahrs;
 // Mahony filter;
-
-uNavINS imuGpsFusionFilter;
 
 adafruit_bno055_offsets_t bno055CalibrationData;
 Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData;
@@ -72,11 +70,13 @@ volatile uint16_t samplesPerSecond;
 
 Average<float, float, 10> wasAverage;
 
-// http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=200&frequencyLow=5&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
-//Low pass butterworth filter order=2 alpha1=0.025
-class  FilterBuLp2 {
+// FXOS8700/FXAS2100
+
+// http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=100&frequencyLow=10&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
+//Low pass butterworth filter order=2 alpha1=0.1
+class  FilterBuLp2_fxos8700Acc {
   public:
-    FilterBuLp2() {
+    FilterBuLp2_fxos8700Acc() {
       v[0] = 0.0;
       v[1] = 0.0;
     }
@@ -86,15 +86,79 @@ class  FilterBuLp2 {
     float step( float x ) { //class II
       v[0] = v[1];
       v[1] = v[2];
-      v[2] = ( 5.542717210280685182e-3 * x )
-             + ( -0.80080264666570755150 * v[0] )
-             + ( 1.77863177782458481424 * v[1] );
+      v[2] = ( 6.745527388907189559e-2 * x )
+             + ( -0.41280159809618854894 * v[0] )
+             + ( 1.14298050253990091107 * v[1] );
       return
         ( v[0] + v[2] )
         + 2 * v[1];
     }
-} accFilterX, accFilterY, accFilterZ;
+} fxos8700accFilterX, fxos8700accFilterY, fxos8700accFilterZ;
 
+// http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=100&frequencyLow=10&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
+//Low pass butterworth filter order=2 alpha1=0.1
+class  FilterBuLp2_fxos8700Mag {
+  public:
+    FilterBuLp2_fxos8700Mag() {
+      v[0] = 0.0;
+      v[1] = 0.0;
+    }
+  private:
+    float v[3];
+  public:
+    float step( float x ) { //class II
+      v[0] = v[1];
+      v[1] = v[2];
+      v[2] = ( 6.745527388907189559e-2 * x )
+             + ( -0.41280159809618854894 * v[0] )
+             + ( 1.14298050253990091107 * v[1] );
+      return
+        ( v[0] + v[2] )
+        + 2 * v[1];
+    }
+} fxos8700magFilterX, fxos8700magFilterY, fxos8700magFilterZ;
+
+// http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=hp&order=1&usesr=usesr&sr=100&frequencyLow=1&noteLow=&noteHigh=&calctype=float&run=Send
+// High pass butterworth filter order=1 alpha1=0.01
+class  FilterBuHp2_fxas2100Gyr {
+  public:
+    FilterBuHp2_fxas2100Gyr() {
+      v[0] = 0.0;
+    }
+  private:
+    float v[2];
+  public:
+    float step( float x ) { //class II
+      v[0] = v[1];
+      v[1] = ( 9.695312529087461995e-1 * x )
+             + ( 0.93906250581749239892 * v[0] );
+      return
+        ( v[1] - v[0] );
+    }
+} fxas2100gyrFilterX, fxas2100gyrFilterY, fxas2100gyrFilterZ;
+
+
+//Low pass butterworth filter order=2 alpha1=0.05
+class  FilterBuLp2_mma8481acc {
+  public:
+    FilterBuLp2_mma8481acc() {
+      v[0] = 0.0;
+      v[1] = 0.0;
+    }
+  private:
+    float v[3];
+  public:
+    float step( float x ) { //class II
+      v[0] = v[1];
+      v[1] = v[2];
+      v[2] = ( 2.008336556421122521e-2 * x )
+             + ( -0.64135153805756306422 * v[0] )
+             + ( 1.56101807580071816339 * v[1] );
+      return
+        ( v[0] + v[2] )
+        + 2 * v[1];
+    }
+} mma8481accFilterX, mma8481accFilterY, mma8481accFilterZ;
 
 // http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=1000&frequencyLow=5&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
 //Low pass butterworth filter order=2 alpha1=0.005
@@ -118,29 +182,6 @@ class  FilterBuLp2_2 {
         + 2 * v[1];
     }
 } filterRoll, filterPitch, filterHeading;
-
-// http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=1000&frequencyLow=5&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
-//Low pass butterworth filter order=2 alpha1=0.005
-class  FilterBuLp2_4 {
-  public:
-    FilterBuLp2_4() {
-      v[0] = 0.0;
-      v[1] = 0.0;
-    }
-  private:
-    float v[3];
-  public:
-    float step( float x ) { //class II
-      v[0] = v[1];
-      v[1] = v[2];
-      v[2] = ( 2.413590490419614820e-4 * x )
-             + ( -0.95654367651120375537 * v[0] )
-             + ( 1.95557824031503590945 * v[1] );
-      return
-        ( v[0] + v[2] )
-        + 2 * v[1];
-    }
-} fxosFilterRoll, fxosFilterPitch, fxosFilterHeading;
 
 // http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=100&frequencyLow=5&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
 //Low pass butterworth filter order=2 alpha1=0.05
@@ -283,29 +324,33 @@ void sensorWorker100HzPoller( void* z ) {
 
   for ( ;; ) {
     if ( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
+      imu::Quaternion orientation;
       imu::Vector<3> euler;
 
       if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
-        euler = bno.getVector( Adafruit_BNO055::VECTOR_EULER );
+        orientation = bno.getQuat();
         xSemaphoreGive( i2cMutex );
+
+        // rotate by the correction
+        {
+          imu::Quaternion correction;
+          correction.fromEuler( radians( steerConfig.mountCorrectionImuRoll ),
+                                radians( steerConfig.mountCorrectionImuPitch ),
+                                radians( steerConfig.mountCorrectionImuYaw ) );
+
+          orientation = orientation * correction;
+        }
+
+        euler = orientation.toEuler();
+        euler.toDegrees();
+        steerImuInclinometerData.heading = filterHeading.step( euler[0] );;
       }
-
-      float heading = filterHeading.step( euler.x() );
-      heading += ( uint16_t )steerConfig.imuOrientation * 90;
-
-      if ( heading > 360 ) {
-        heading -= 360;
-      }
-
-      steerImuInclinometerData.heading = heading;
     }
 
     if ( initialisation.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
          initialisation.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
 
-      sensors_event_t gyro_event;
-      sensors_event_t accel_event;
-      sensors_event_t mag_event;
+      sensors_event_t gyro_event, accel_event, mag_event;
 
       // Get new data samples
       if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
@@ -337,9 +382,9 @@ void sensorWorker100HzPoller( void* z ) {
         Serial.println();
 
         if ( Serial.available() >= 68 ) {
-          uint8_t data[68];
+          static uint8_t data[68];
           Serial.readBytes( data, sizeof( data ) );
-          float dataFloat[16];
+          static float dataFloat[16];
           memcpy( dataFloat, data + 2, 64 );
 
           fxos8700Fxas21002CalibrationData.mag_offsets[0] = dataFloat[6];
@@ -365,101 +410,103 @@ void sensorWorker100HzPoller( void* z ) {
       }
 
       // Apply mag offset compensation (base values in uTesla)
-      float x = mag_event.magnetic.x - fxos8700Fxas21002CalibrationData.mag_offsets[0];
-      float y = mag_event.magnetic.y - fxos8700Fxas21002CalibrationData.mag_offsets[1];
-      float z = mag_event.magnetic.z - fxos8700Fxas21002CalibrationData.mag_offsets[2];
+      float mx = mag_event.magnetic.x - fxos8700Fxas21002CalibrationData.mag_offsets[0];
+      float my = mag_event.magnetic.y - fxos8700Fxas21002CalibrationData.mag_offsets[1];
+      float mz = mag_event.magnetic.z - fxos8700Fxas21002CalibrationData.mag_offsets[2];
 
       // Apply mag soft iron error compensation
-      float mx = x * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][0] +
-                 y * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][1] +
-                 z * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][2];
-      float my = x * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][0] +
-                 y * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][1] +
-                 z * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][2];
-      float mz = x * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][0] +
-                 y * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][1] +
-                 z * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][2];
+      float mmx = mx * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][0] +
+                  my * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][1] +
+                  mz * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[0][2];
+      float mmy = mx * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][0] +
+                  my * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][1] +
+                  mz * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[1][2];
+      float mmz = mx * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][0] +
+                  my * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][1] +
+                  mz * fxos8700Fxas21002CalibrationData.mag_softiron_matrix[2][2];
 
       // Apply gyro zero-rate error compensation
-      float gx = gyro_event.gyro.x + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[0];
-      float gy = gyro_event.gyro.y + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[1];
-      float gz = gyro_event.gyro.z + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[2];
+      float gx = degrees( gyro_event.gyro.x + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[0] );
+      float gy = degrees( gyro_event.gyro.y + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[1] );
+      float gz = degrees( gyro_event.gyro.z + fxos8700Fxas21002CalibrationData.gyro_zero_offsets[2] );
 
-      // The filter library expects gyro data in degrees/s, but adafruit sensor
-      // uses rad/s so we need to convert them first (or adapt the filter lib
-      // where they are being converted)
-      gx *= 57.2958F;
-      gy *= 57.2958F;
-      gz *= 57.2958F;
+//       // filter everything: lpf acc + mag, hpf gyr
+//       // input into AHRS
+//       ahrs.update(
+//         fxas2100gyrFilterX.step( gx ),
+//         fxas2100gyrFilterY.step( gy ),
+//         fxas2100gyrFilterZ.step( gz ),
+//
+//         fxos8700accFilterX.step( accel_event.acceleration.x ),
+//         fxos8700accFilterY.step( accel_event.acceleration.y ),
+//         fxos8700accFilterZ.step( accel_event.acceleration.z ),
+//
+//         fxos8700magFilterX.step( mmx ),
+//         fxos8700magFilterY.step( mmy ),
+//         fxos8700magFilterZ.step( mmz )
+//       );
 
-      if ( steerConfig.mergeImuWithGps ) {
-        imuGpsFusionFilter.update(
-          currentGpsFix.dateTime_cs, currentGpsFix.velocity_north / 100, currentGpsFix.velocity_east / 100, currentGpsFix.velocity_down / 100,
-          ( ( double )currentGpsFix.latitudeL() / 10000000 ) * PI / 180.0f, ( ( double )currentGpsFix.longitudeL() / 10000000 ) * PI / 180.0f, currentGpsFix.altitude(),
-          gx, -gy, gz,
-          accel_event.acceleration.x, accel_event.acceleration.y, accel_event.acceleration.z,
-          mx, my, mz );
-        
-        float roll, pitch, heading;
-        if ( steerConfig.lpfPose ) {
-          roll = filterRoll.step( degrees( imuGpsFusionFilter.getRoll_rad() ) );
-          pitch = filterPitch.step( degrees( imuGpsFusionFilter.getPitch_rad() ) );
-          heading = filterHeading.step( degrees( imuGpsFusionFilter.getHeading_rad() ) );
-        } else {
-          roll = degrees( imuGpsFusionFilter.getRoll_rad() );
-          pitch = degrees( imuGpsFusionFilter.getPitch_rad() );
-          heading = degrees( imuGpsFusionFilter.getHeading_rad() );
-        }
+      // input into AHRS
+      ahrs.update(
+        gx,
+        gy,
+        gz,
 
-        steerImuInclinometerData.roll = roll;
-        steerImuInclinometerData.pitch = pitch;
-        steerImuInclinometerData.roll -= steerConfig.rollOffset;
-        steerImuInclinometerData.heading = heading;
+        accel_event.acceleration.x,
+        accel_event.acceleration.y,
+        accel_event.acceleration.z,
 
-      } else {
-        // Update the filter
-        filter.update( gx, gy, gz,
-                       accel_event.acceleration.x, accel_event.acceleration.y, accel_event.acceleration.z,
-                       mx, my, mz );
+        mmx,
+        mmy,
+        mmz
+      );
 
-        float roll = filterRoll.step( filter.getRoll() );
-        float pitch = filterPitch.step( filter.getPitch() );
-        float heading = filterHeading.step( filter.getYaw() );
+      float w, x, y, z;
+      ahrs.getQuaternion( &w, &x, &y, &z );
+      imu::Quaternion orientation( w, x, y, z );
 
+      // rotate by the correction
+      {
+        imu::Quaternion correction;
+        correction.fromEuler( radians( steerConfig.mountCorrectionImuRoll ),
+                              radians( steerConfig.mountCorrectionImuPitch ),
+                              radians( steerConfig.mountCorrectionImuYaw ) );
 
-        switch ( steerConfig.inclinoOrientation ) {
-          case SteerConfig::InclinoOrientation::Forwards:
-            steerImuInclinometerData.roll = -pitch;
-            steerImuInclinometerData.pitch = roll;
-            break;
+        orientation = orientation * correction;
+      }
 
-          case SteerConfig::InclinoOrientation::Backwards:
-            steerImuInclinometerData.roll = pitch;
-            steerImuInclinometerData.pitch = -roll;
-            break;
+      // orientation has the corrected angles in it, extract them (and correct the refrence frame)
+      {
+        imu::Vector<3> euler;
+        euler = orientation.toEuler();
+        euler.toDegrees();
+        steerImuInclinometerData.roll = euler[2];
+        steerImuInclinometerData.pitch = -euler[1];
 
-          case SteerConfig::InclinoOrientation::Left:
-            steerImuInclinometerData.roll = -roll;
-            steerImuInclinometerData.pitch = -pitch;
-            break;
+        float heading = euler[0] + 180 + 90;
 
-          case SteerConfig::InclinoOrientation::Right:
-            steerImuInclinometerData.roll = roll;
-            steerImuInclinometerData.pitch = pitch;
-            break;
-        }
-
-        steerImuInclinometerData.roll -= steerConfig.rollOffset;
-
-        heading += ( uint16_t )steerConfig.imuOrientation * 90;
-
-        if ( heading > 360 ) {
+        while ( heading > 360 ) {
           heading -= 360;
         }
 
         steerImuInclinometerData.heading = heading;
-      }
 
+        if ( !steerConfig.sendCalibrationDataFromImu ) {
+          static uint8_t loopCounter = 0;
+
+          if ( loopCounter++ > 9 ) {
+            loopCounter = 0;
+            {
+              Serial.print( "roll, pitch, heading: " );
+              Serial.print( steerImuInclinometerData.roll, 4 );
+              Serial.print( ", " );
+              Serial.print( steerImuInclinometerData.pitch, 4 );
+              Serial.print( ", " );
+              Serial.println( steerImuInclinometerData.heading, 4 );
+            }
+          }
+        }
+      }
     }
 
 
@@ -559,15 +606,14 @@ void sensorWorker100HzPoller( void* z ) {
       if ( loopCounter++ > 99 ) {
         loopCounter = 0;
         {
-          Control* handle = ESPUI.getControl( labelHeading );
-          handle->value = ( float )steerImuInclinometerData.heading;
-          handle->value += "°";
-          ESPUI.updateControl( handle );
-        }
-        {
-          Control* handle = ESPUI.getControl( labelRoll );
-          handle->value = ( float )steerImuInclinometerData.roll;
-          handle->value += "°";
+          Control* handle = ESPUI.getControl( labelOrientation );
+          handle->value = "Roll: ";
+          handle->value += ( float )steerImuInclinometerData.roll;
+          handle->value += "°, Pitch: ";
+          handle->value += ( float )steerImuInclinometerData.pitch;
+          handle->value += "°, Heading: ";
+          handle->value += ( float )steerImuInclinometerData.heading;
+
           ESPUI.updateControl( handle );
         }
         {
@@ -616,48 +662,43 @@ void sensorWorker10HzPoller( void* z ) {
       }
 
       for ( uint8_t i = 0; i < numSamples; i++ ) {
-        float x = accFilterX.step( events[i].acceleration.x );
-        float y = accFilterY.step( events[i].acceleration.y );
-        float z = accFilterZ.step( events[i].acceleration.z );
+        float x = mma8481accFilterX.step( events[i].acceleration.x );
+        float y = mma8481accFilterY.step( events[i].acceleration.y );
+        float z = mma8481accFilterZ.step( events[i].acceleration.z );
 
-        accXaverage += x;
-        accYaverage += y;
-        accZaverage += z;
+//         accXaverage += x;
+//         accYaverage += y;
+//         accZaverage += z;
 
         accX = x;
         accY = y;
         accZ = z;
       }
 
-      float fXg = accXaverage;
-      float fYg = accYaverage;
-      float fZg = accZaverage;
+      float fXg = accX/*average*/;
+      float fYg = accY/*average*/;
+      float fZg = accZ/*average*/;
       float roll  = ( atan2( -fYg, fZg ) * 180.0 ) / M_PI;
       float pitch = ( atan2( fXg, sqrt( fYg * fYg + fZg * fZg ) ) * 180.0 ) / M_PI;
 
-      switch ( steerConfig.inclinoOrientation ) {
-        case SteerConfig::InclinoOrientation::Forwards:
-          steerImuInclinometerData.roll = -pitch;
-          steerImuInclinometerData.pitch = roll;
-          break;
+      imu::Quaternion orientation;
+      orientation.fromEuler( roll, pitch, 0 );
 
-        case SteerConfig::InclinoOrientation::Backwards:
-          steerImuInclinometerData.roll = pitch;
-          steerImuInclinometerData.pitch = -roll;
-          break;
+      // rotate by the correction
+      {
+        imu::Quaternion correction;
+        correction.fromEuler( radians( steerConfig.mountCorrectionImuRoll ),
+                              radians( steerConfig.mountCorrectionImuPitch ),
+                              radians( steerConfig.mountCorrectionImuYaw ) );
 
-        case SteerConfig::InclinoOrientation::Left:
-          steerImuInclinometerData.roll = -roll;
-          steerImuInclinometerData.pitch = -pitch;
-          break;
-
-        case SteerConfig::InclinoOrientation::Right:
-          steerImuInclinometerData.roll = roll;
-          steerImuInclinometerData.pitch = pitch;
-          break;
+        orientation = orientation * correction;
       }
 
-      steerImuInclinometerData.roll -= steerConfig.rollOffset;
+      imu::Vector<3> euler = orientation.toEuler();
+      euler.toDegrees();
+
+      steerImuInclinometerData.roll = euler[2];
+      steerImuInclinometerData.pitch = euler[1];
     }
 
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
@@ -729,7 +770,7 @@ void initSensors() {
         initialisation.inclinoType = steerConfig.inclinoType;
       }
 
-      filter.begin( 100 );
+      ahrs.begin( 100 );
     } else {
       handle->value = "FXAS2100/FXOS8700 not found";
       handle->color = ControlColor::Alizarin;
@@ -773,7 +814,7 @@ void initSensors() {
     xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 4096, NULL, 5, NULL );
   }
 
-  xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 4096, NULL, 6, NULL );
+  xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 8192 * 2, NULL, 6, NULL );
 }
 
 

@@ -28,12 +28,3 @@
 [submodule "tools/EspArduinoExceptionDecoder"]
 	path = tools/EspArduinoExceptionDecoder
 	url = https://github.com/me21/EspArduinoExceptionDecoder.git
-[submodule "lib/uNavINS"]
-	path = lib/uNavINS
-	url = https://github.com/eringerli/uNavINS.git
-[submodule "lib/Eigen"]
-	path = lib/Eigen
-	url = https://github.com/bolderflight/Eigen.git
-[submodule "lib/NeoGPS"]
-	path = lib/NeoGPS
-	url = https://github.com/eringerli/NeoGPS.git

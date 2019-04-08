@@ -41,8 +41,7 @@
 #define MAIN_HPP
 
 extern uint16_t labelLoad;
-extern uint16_t labelHeading;
-extern uint16_t labelRoll;
+extern uint16_t labelOrientation;
 extern uint16_t labelWheelAngle;
 extern uint16_t textNmeaToSend;
 
@@ -183,12 +182,6 @@ struct SteerConfig {
     BNO055 = 1,
     Fxos8700Fxas21002
   } imuType = ImuType::None;
-  enum class ImuOrientation : uint8_t {
-    Forwards = 0,
-    Right,
-    Backwards,
-    Left
-  } imuOrientation = ImuOrientation::Forwards;
 
   enum class InclinoType : uint8_t {
     None = 0,
@@ -196,19 +189,12 @@ struct SteerConfig {
     DOGS2,
     Fxos8700Fxas21002
   } inclinoType = InclinoType::None;
-  enum class InclinoOrientation : uint8_t {
-    Forwards = 0,
-    Backwards,
-    Left,
-    Right
-  } inclinoOrientation = InclinoOrientation::Forwards;
 
   bool sendCalibrationDataFromImu = false;
 
-  float rollOffset = 0;
-
-  bool mergeImuWithGps = false;
-  bool lpfPose = false;
+  float mountCorrectionImuRoll = 0;
+  float mountCorrectionImuPitch = 0;
+  float mountCorrectionImuYaw = 0;
 
   bool canBusEnabled = false;
   SteerConfig::Gpio canBusRx = SteerConfig::Gpio::Esp32Gpio26;
