@@ -39,5 +39,6 @@ Read this file through, before starting to half-ass it. It is not so hard to get
 As there are sometimes new repositories/submodules added, enter the following to update:
 1. go to the esp32-aog repository
 1. `git pull`
+1. `git submodule sync`
 1. `git submodule init`
 1. `git submodule update`
