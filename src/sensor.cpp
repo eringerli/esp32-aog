@@ -706,8 +706,6 @@ void sensorWorker10HzPoller( void* z ) {
 }
 
 void initSensors() {
-  Wire.setClock( 400000 );
-
   if ( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
     Control* handle = ESPUI.getControl( labelStatusInclino );
 
