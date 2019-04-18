@@ -764,7 +764,7 @@ void setup( void ) {
 //       ESPUI.addControl( ControlType::Option, "DOGS2", "2", ControlColor::Alizarin, sel );
       ESPUI.addControl( ControlType::Option, "FXOS8700/FXAS21002", "3", ControlColor::Alizarin, sel );
     }
-    
+
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Mounting Correction (Roll) of Imu", String( steerConfig.mountCorrectionImuRoll ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
@@ -878,18 +878,21 @@ void setup( void ) {
     }
 
     {
-      uint16_t baudrate = ESPUI.addControl( ControlType::Select, "Baudrate*", String( steerConfig.rtkCorrectionBaudrate ), ControlColor::Peterriver, tab,
+      uint16_t baudrate = ESPUI.addControl( ControlType::Select, "Baudrate", String( steerConfig.rtkCorrectionBaudrate ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         uint32_t baudrate = control->value.toInt();
         steerConfig.rtkCorrectionBaudrate = baudrate;
-        Serial2.flush();
-        Serial2.begin( baudrate );
+        Serial2.updateBaudRate( baudrate );
       } );
+      ESPUI.addControl( ControlType::Option, "4800", "4800", ControlColor::Alizarin, baudrate );
       ESPUI.addControl( ControlType::Option, "9600", "9600", ControlColor::Alizarin, baudrate );
       ESPUI.addControl( ControlType::Option, "19200", "19200", ControlColor::Alizarin, baudrate );
       ESPUI.addControl( ControlType::Option, "38400", "38400", ControlColor::Alizarin, baudrate );
       ESPUI.addControl( ControlType::Option, "57600", "57600", ControlColor::Alizarin, baudrate );
       ESPUI.addControl( ControlType::Option, "115200", "115200", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "230400", "230400", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "460800", "460800", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "921600", "921600", ControlColor::Alizarin, baudrate );
     }
 
     ESPUI.addControl( ControlType::Number, "Intervall to send Position", String( steerConfig.ntripPositionSendIntervall ), ControlColor::Peterriver, tab,
@@ -916,7 +919,7 @@ void setup( void ) {
 //       ESPUI.addControl( ControlType::Option, "Bluetooth", "6", ControlColor::Alizarin, sel );
     }
     {
-      uint16_t num = ESPUI.addControl( ControlType::Number, "TCP-Socket for distributing NMEA data (set to 0 to deactivate)*",  String( steerConfig.sendNmeaDataTcpPort ), ControlColor::Wetasphalt, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "TCP-Socket for a direct connection to the GPS-Receiver (set to 0 to deactivate, can be used for configuration with u-center or with 3rd-party software)*",  String( steerConfig.sendNmeaDataTcpPort ), ControlColor::Wetasphalt, tab,
       []( Control * control, int id ) {
         steerConfig.sendNmeaDataTcpPort = control->value.toInt();
       } );

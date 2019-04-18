@@ -33,7 +33,7 @@
 #include <MicroNMEA.h>
 
 #include "main.hpp"
-    
+
 String lastGN;
 
 constexpr size_t NmeaBufferSize = 120;
@@ -48,16 +48,7 @@ static void handleError( void* arg, AsyncClient* client, int8_t error ) {
 }
 
 static void handleData( void* arg, AsyncClient* client, void* data, size_t len ) {
-//   Serial.printf( "\n data received from client %s \n", client->remoteIP().toString().c_str() );
-//   Serial.write( ( uint8_t* )data, len );
-
-//  // reply to client
-//  if (client->space() > 32 && client->canSend()) {
-//    char reply[32];
-//    sprintf(reply, "this is from %s", SERVER_HOST_NAME);
-//    client->add(reply, strlen(reply));
-//    client->send();
-//  }
+  Serial2.write( ( uint8_t* )data, len );
 }
 
 static void handleDisconnect( void* arg, AsyncClient* client ) {
@@ -85,6 +76,8 @@ static void handleNewClient( void* arg, AsyncClient* client ) {
   client->onTimeout( &handleTimeOut, NULL );
 }
 
+static char receiveBuffer[400];
+
 void nmeaWorker( void* z ) {
 
   String sentence;
@@ -103,8 +96,25 @@ void nmeaWorker( void* z ) {
   for ( ;; ) {
     uint16_t cnt = Serial2.available();
 
+    if ( cnt > sizeof( receiveBuffer ) ) {
+      cnt = sizeof( receiveBuffer );
+    }
+
     for ( uint16_t i = 0; i < cnt; i++ ) {
-      char c = Serial2.read();
+      receiveBuffer[i] = Serial2.read();
+    }
+
+    // send sentence to all connected clients on the TCP-Socket
+    for ( auto client = clients.begin() ; client != clients.end(); ++client ) {
+      // reply to client
+      if ( ( *client )->space() > cnt && ( *client )->canSend() ) {
+        ( *client )->write( receiveBuffer, cnt );
+        ( *client )->send();
+      }
+    }
+
+    for ( uint16_t i = 0; i < cnt; i++ ) {
+      char c = receiveBuffer[i];
 
       if ( nmea.process( c ) ) {
         if ( strcmp( nmea.getMessageID(), "GGA" ) == 0 ) {
@@ -137,15 +147,6 @@ void nmeaWorker( void* z ) {
 //           sentence += "*";
 //           sentence += checksum;
           sentence += "\r\n";
-
-          // send sentence to all connected clients
-          for ( auto client = clients.begin() ; client != clients.end(); ++client ) {
-            // reply to client
-            if ( ( *client )->space() > sentence.length() && ( *client )->canSend() ) {
-              ( *client )->write( sentence.c_str(), sentence.length() );
-              ( *client )->send();
-            }
-          }
 
           switch ( steerConfig.sendNmeaDataTo ) {
             case SteerConfig::SendNmeaDataTo::UDP: {
