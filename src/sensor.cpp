@@ -491,21 +491,21 @@ void sensorWorker100HzPoller( void* z ) {
 
         steerImuInclinometerData.heading = heading;
 
-        if ( !steerConfig.sendCalibrationDataFromImu ) {
-          static uint8_t loopCounter = 0;
-
-          if ( loopCounter++ > 9 ) {
-            loopCounter = 0;
-            {
-              Serial.print( "roll, pitch, heading: " );
-              Serial.print( steerImuInclinometerData.roll, 4 );
-              Serial.print( ", " );
-              Serial.print( steerImuInclinometerData.pitch, 4 );
-              Serial.print( ", " );
-              Serial.println( steerImuInclinometerData.heading, 4 );
-            }
-          }
-        }
+//         if ( !steerConfig.sendCalibrationDataFromImu ) {
+//           static uint8_t loopCounter = 0;
+//
+//           if ( loopCounter++ > 9 ) {
+//             loopCounter = 0;
+//             {
+//               Serial.print( "roll, pitch, heading: " );
+//               Serial.print( steerImuInclinometerData.roll, 4 );
+//               Serial.print( ", " );
+//               Serial.print( steerImuInclinometerData.pitch, 4 );
+//               Serial.print( ", " );
+//               Serial.println( steerImuInclinometerData.heading, 4 );
+//             }
+//           }
+//         }
       }
     }
 
