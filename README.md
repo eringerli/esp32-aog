@@ -37,10 +37,12 @@ Software to control the tractor from AgOpenGPS. Can also be used as an NTRIP-cli
   D-part of the PID controller is used in newer versions for sidehill draft compensation). General rule: if it is configurable in the WebUI, the value in AgOpenGPS
   doesn't matter.
 
-# Warning before you start
+# Installation
+
+## Warning before you start
 Read this file through, before starting to half-ass it. It is not so hard to get a working system, just give it enough time and install it in this order.
 
-# Install Prerequisites
+## Install Prerequisites
 1. install atom: https://atom.io/
 1. inside atom:
    1. click on "install a package"
@@ -55,7 +57,7 @@ Read this file through, before starting to half-ass it. It is not so hard to get
 1. install git: https://git-scm.com/downloads
    1. use the defaults in the setup, define atom as the default editor
 
-# Downloading the repository
+## Downloading the repository
 1. open a folder in the explorer, preferably not too deep inside the drive. `C:\` or a folder under it should work
 1. right click on it and choose "Git Bash Here"
 1. enter `git clone https://github.com/eringerli/esp32-aog.git`
@@ -63,15 +65,15 @@ Read this file through, before starting to half-ass it. It is not so hard to get
 1. enter `git submodule init`
 1. enter `git submodule update`
 
-# Compiling
+## Compiling
 1. open the created folder above from the platformio home
 1. click build (the tile with the tick), the missing dependencies should be installed automaticaly
 
-# Upload to the ESP32
+## Upload to the ESP32
 1. connect the ESP32 over USB
 1. click on upload (the tile with the arrow)
 
-# Updating the repository
+## Updating the repository
 As there are sometimes new repositories/submodules added, enter the following to update:
 1. go to the esp32-aog repository and open a git bash-terminal
 1. `git pull`
