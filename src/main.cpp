@@ -246,6 +246,21 @@ void setup( void ) {
     labelStatusNtrip    = ESPUI.addControl( ControlType::Label, "NTRIP:", "Not configured", ControlColor::Turquoise, tab );
   }
 
+  // Info Tab
+  {
+    uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Info/Help", "Info/Help" );
+    ESPUI.addControl( ControlType::Label, "Attention:", "As this WebUI is great and looks good, it is quite taxing on the controller. So close the browser after you are finished with configuring, as it can crash the controller without warning.", ControlColor::Carrot, tab );
+
+    ESPUI.addControl( ControlType::Label, "Network:", "Here the network is configured. Leave it on defaults, only if used as roof controller (only GPS + IMU), set port to send from to 5544.", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "CAN Bus/J1939:", "Enable if used. To use data from the vehicle bus as workswitch, configure it in the next tab.", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Work- and Steerswitch:", "If work- and steerswitches as physical inputs are used, enable them by configuring a GPIO. If you want to use the CAN-bus (J1939), set the type to a hitch position or RPM.", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Wheel Angle Sensor:", "To enable the wheel angle sensor, configure the input first. If you use two arms connected to the tie rod, measure them exactly and configure the values. This is to calculate out the unlinearities.", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Steering:", "Set up the type and the GPIOs", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Steering PID:", "This controller uses its own PID-controller. No values are taken over from AOG, so everything is entered here.", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Sensors:", "Here the IMU and inclinometer are set up. The Mounting Correction is entered as an euler angle, so the IMU can be mounted in every position, as long as they are positioned relative to each other with no difference. The FXAS2100/FXOS8700-combo is recomned, as they are mounted on the same PCB", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "NTRIP/GPS:", "Here the connection to the GPS is set up, also the NTRIP-client. Usualy, you want to send the data to AOG via UDP, a serial connection via USB is also possible. The TCP-Socket enables 3rd-party GPS-Software and configuring the GPS-Receiver with u-center.", ControlColor::Turquoise, tab );
+  }
+
   // Network Tab
   {
     uint16_t tab = ESPUI.addControl( ControlType::Tab, "Network", "Network" );
@@ -515,7 +530,7 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
     }
     {
-      uint16_t num = ESPUI.addControl( ControlType::Number, "2. Arm connect to sensor (mm)", String( steerConfig.wheelAngleSecondArmLenght ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "2. Arm connect to tie rod (mm)", String( steerConfig.wheelAngleSecondArmLenght ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.wheelAngleSecondArmLenght = control->value.toFloat();
       } );
@@ -533,7 +548,7 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
     }
     {
-      uint16_t num = ESPUI.addControl( ControlType::Number, "Minimum Angle", String( steerConfig.wheelAngleMinimumAngle ), ControlColor::Peterriver, tab,
+      uint16_t num = ESPUI.addControl( ControlType::Number, "Minimum Angle of wheel angle sensor", String( steerConfig.wheelAngleMinimumAngle ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.wheelAngleMinimumAngle = control->value.toFloat();
       } );
