@@ -640,10 +640,10 @@ void setup( void ) {
   {
     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering PID", "Steering PID" );
 
-    ESPUI.addControl( ControlType::Switcher, "Allow AgOpenGPS to overwrite PID values", steerConfig.allowPidOverwrite ? "1" : "0", ControlColor::Peterriver, tab,
-    []( Control * control, int id ) {
-      steerConfig.allowPidOverwrite = control->value.toInt() == 1;
-    } );
+//     ESPUI.addControl( ControlType::Switcher, "Allow AgOpenGPS to overwrite PID values", steerConfig.allowPidOverwrite ? "1" : "0", ControlColor::Peterriver, tab,
+//     []( Control * control, int id ) {
+//       steerConfig.allowPidOverwrite = control->value.toInt() == 1;
+//     } );
 
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "PID Kp", String( steerConfig.steeringPidKp, 4 ), ControlColor::Peterriver, tab,

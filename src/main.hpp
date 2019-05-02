@@ -215,14 +215,13 @@ struct SteerConfig {
     tcp
   } rtkCorrectionType = RtkCorrectionType::None;
 
-  char rtkCorrectionServer[48] = "home.magahugu.ch";
+  char rtkCorrectionServer[48] = "example.com";
   uint16_t rtkCorrectionPort = 2101;
   char rtkCorrectionUsername[24] = "gps";
-  char rtkCorrectionPassword[24] = "eringer";
+  char rtkCorrectionPassword[24] = "gps";
   char rtkCorrectionMountpoint[24] = "STALL";
   char rtkCorrectionMountpoint2[24] = "STALL";
 
-//   char rtkCorrectionURL[120] = "http://gps:eringer@192.168.11.63:2101/STALL";
   char rtkCorrectionNmeaToSend[120] = "";
 
   uint32_t rtkCorrectionBaudrate = 115200;
