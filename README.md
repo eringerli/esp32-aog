@@ -8,27 +8,31 @@ Software to control the tractor from AgOpenGPS. Can also be used as an NTRIP-cli
 * Everything is configured from the WebUI, no conditional compiling and changing of the source code needed. Sane defaults are used: everything has to
   be activated to work, like PWM-drivers or IMUs
 * Settings are stored into flash on user request. New features normaly require an apply&reboot cycle to activate, the WebUI clearly shows this.
-* Status and values are actualised in realtime in the WebUI
+* Status and values like uptime, processor load, roll/pitch/heading etc are actualised in realtime in the WebUI
 * CAN-bus/J1939-connection possible, so the workswitch can be configured to react on PTO or motor RPMs or hitch positions
 * The autosteer-button is automaticaly recognised as a switch, if held longer than a configurable time
-* The wheel angle sensor can be configured as an input of the ESP32 or via ADS1115 to enable differential measurment (recomended)
+* The wheel angle sensor can be configured as an input of the ESP32 or via ADS1115 to enable differential measurement (recomended)
 * A new mode for the wheel angle sensor is introduced, to calculate out the unlinearities if connected with two arms to the tie rod
 * A complete new PID-controller is implemented
-* The combo FXAS2100/FXOS8700 for the IMU is recomended, as it is much more precise. An euler angle can be configured to account for mountig
+* The combo FXAS2100/FXOS8700 for the IMU is recomended, as it is much more precise. An euler angle can be configured to account for mounting
   errors like mounting on a slanted bonnet.
-* MMA8451 and BNO055 work too, but especialy the BNO055 is not recomended due to the noisy data and complicated calibration
+* calibration of the FXAS2100/FXOS8700 can be done over serial link and with the [MotionCal App by PJRC](https://www.pjrc.com/store/prop_shield.html).
+  After calibration, hit "Send Cal" in MotionCal and "Apply" in the WebUI to save the values into the flash.
+* MMA8451 and BNO055 work too, but especialy the BNO055 is not recomended due to the noisy data and repeated calibration after every restart or if moved too much.
+* All analog measurements are digitaly low-pass filtered (2. order butterworth or similar), this removes a lot of noise.
+* All operations for the IMU are done in quaternions, so no gimbal lock is possible and is generally more performant if somewhat more complicated to understand.
 * A complete NTRIP-client is implemented, a fixed or dynamic position can be sent back by a configurable intervall.
 * The GPS-data can be sent to either UDP, USB (Serial) ot the second physical serial port of the ESP32.
-* A TCP-socket provides a direct link to the GPS-Receiver. It is possible to configure the receiver on the go (pe. the F9P with  u-center).
+* A TCP-socket provides a direct link to the GPS-Receiver. It is possible to configure the receiver on the go (pe. the F9P with u-center).
   Also the data can be used by 3rd-party software which expects the NMEA-stream on a TCP-connection.
 
 # Caveats
 * As this software is fearly new, not so much testing is done. If you find bug, please open an issue on github.
-* **As the WebUI is quite taxing on the Websocket.implementation; the ESP32 can crash without warning if left too long connected. Without open connection to a browser,
+* **As the WebUI is quite taxing on the Websocket implementation; the ESP32 can crash without warning if left too long connected. Without open connection to a browser,
   no such crashes are documented. On my hardware, a longtime stresstest of more the five days of uptime was completed successfully, if the tab with
-  the WebUI is closed after using it.** The cause of the crashes is in the implementation of the used TCP-stack/Websocket-API, not much can be done about it,
+  the WebUI is closed after using it.** The cause of the crashes is in the implementation of the used TCP-stack/Websocket-API. Not much can be done about it,
   as it is the default implementation which comes with framework (ESPAsyncWebServer), is really fast/performant and is used by the library to generate the WebUI.
-* No configuration is done in AgOpenGPS, everything is configured in the WebUI. Technical explanaion: some of the settings in AgOpenGPS have the
+* No configuration is done in AgOpenGPS, everything is configured in the WebUI. Technical explanation: some of the settings in AgOpenGPS have the
   wrong range (like the counts per degree or center of the wheel angle sensor if connected by ADS1115), or are used for different things (like the
   D-part of the PID controller is used in newer versions for sidehill draft compensation). General rule: if it is configurable in the WebUI, the value in AgOpenGPS
   doesn't matter.
