@@ -70,6 +70,8 @@ volatile uint16_t samplesPerSecond;
 
 Average<float, float, 10> wasAverage;
 
+imu::Quaternion mountingCorrection;
+
 // FXOS8700/FXAS2100
 
 // http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=bu&passmode=lp&order=2&usesr=usesr&sr=100&frequencyLow=10&noteLow=&noteHigh=&pw=pw&calctype=float&run=Send
@@ -205,6 +207,23 @@ class  FilterBuLp2_3 {
         + 2 * v[1];
     }
 } wheelAngleSensorFilter;
+
+void calculateMountingCorrection() {
+  // rotate by the correction, relative to the tracot axis
+  {
+    mountingCorrection.fromEuler( radians( steerConfig.mountCorrectionImuRoll ), 0, 0 );
+  }
+  {
+    imu::Quaternion correction;
+    correction.fromEuler( 0, radians( steerConfig.mountCorrectionImuPitch ), 0 );
+    mountingCorrection = mountingCorrection * correction;
+  }
+  {
+    imu::Quaternion correction;
+    correction.fromEuler( 0, 0, radians( steerConfig.mountCorrectionImuYaw ) );
+    mountingCorrection = mountingCorrection * correction;
+  }
+}
 
 /**************************************************************************/
 /*
@@ -706,6 +725,8 @@ void sensorWorker10HzPoller( void* z ) {
 }
 
 void initSensors() {
+  calculateMountingCorrection();
+
   if ( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
     Control* handle = ESPUI.getControl( labelStatusInclino );
 

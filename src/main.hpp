@@ -416,6 +416,7 @@ class TCritSect {
 extern void writeEeprom();
 extern void initIdleStats();
 extern void initSensors();
+extern void calculateMountingCorrection();
 extern void initRtkCorrection();
 extern void initCan();
 extern void initAutosteer();

@@ -257,7 +257,7 @@ void setup( void ) {
     ESPUI.addControl( ControlType::Label, "Wheel Angle Sensor:", "To enable the wheel angle sensor, configure the input first. If you use two arms connected to the tie rod, measure them exactly and configure the values. This is to calculate out the unlinearities.", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "Steering:", "Set up the type and the GPIOs", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "Steering PID:", "This controller uses its own PID-controller. No values are taken over from AOG, so everything is entered here.", ControlColor::Turquoise, tab );
-    ESPUI.addControl( ControlType::Label, "Sensors:", "Here the IMU and inclinometer are set up. The Mounting Correction is entered as an euler angle, so the IMU can be mounted in every position, as long as they are positioned relative to each other with no difference. The FXAS2100/FXOS8700-combo is recomned, as they are mounted on the same PCB", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Sensors:", "Here the IMU and inclinometer are set up. The Mounting Correction is entered as three angles relative to the tractor axis, so the IMU can be mounted in every position, as long as the chips are positioned relative to each other with no difference (normaly, the manufacturer of the sensor pcb does this anyway). The FXAS2100/FXOS8700-combo is recomned, as they are mounted on the same PCB", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "NTRIP/GPS:", "Here the connection to the GPS is set up, also the NTRIP-client. Usualy, you want to send the data to AOG via UDP, a serial connection via USB is also possible. The TCP-Socket enables 3rd-party GPS-Software and configuring the GPS-Receiver with u-center.", ControlColor::Turquoise, tab );
   }
 
@@ -784,6 +784,7 @@ void setup( void ) {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Mounting Correction (Roll) of Imu", String( steerConfig.mountCorrectionImuRoll ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.mountCorrectionImuRoll = control->value.toFloat();
+        calculateMountingCorrection();
       } );
       ESPUI.addControl( ControlType::Min, "Min", "-180", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Max, "Max", "180", ControlColor::Peterriver, num );
@@ -793,6 +794,7 @@ void setup( void ) {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Mounting Correction (Pitch) of Imu", String( steerConfig.mountCorrectionImuPitch ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.mountCorrectionImuPitch = control->value.toFloat();
+        calculateMountingCorrection();
       } );
       ESPUI.addControl( ControlType::Min, "Min", "-180", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Max, "Max", "180", ControlColor::Peterriver, num );
@@ -802,6 +804,7 @@ void setup( void ) {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Mounting Correction (Yaw) of Imu", String( steerConfig.mountCorrectionImuYaw ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.mountCorrectionImuYaw = control->value.toFloat();
+        calculateMountingCorrection();
       } );
       ESPUI.addControl( ControlType::Min, "Min", "-180", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Max, "Max", "180", ControlColor::Peterriver, num );
