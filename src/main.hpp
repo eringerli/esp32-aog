@@ -244,10 +244,12 @@ struct SteerConfig {
   uint16_t portListenTo = 8888;
   uint16_t portSendTo = 9999;
 
+  bool retainWifiSettings = false;
+
 //   char dummy[100];
 
 };
-extern SteerConfig steerConfig;
+extern SteerConfig steerConfig, steerConfigDefaults;
 
 extern adafruit_bno055_offsets_t bno055CalibrationData;
 

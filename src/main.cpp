@@ -38,7 +38,7 @@
 ///////////////////////////////////////////////////////////////////////////
 // global data
 ///////////////////////////////////////////////////////////////////////////
-SteerConfig steerConfig;
+SteerConfig steerConfig, steerConfigDefaults;
 Initialisation initialisation;
 SteerCanData steerCanData = {0};
 
@@ -225,7 +225,7 @@ void setup( void ) {
     }
   } );
 
-  buttonReset = ESPUI.addControl( ControlType::Button, "If this turn red, you have to", "Apply & Reset", ControlColor::Emerald, Control::noParent,
+  buttonReset = ESPUI.addControl( ControlType::Button, "If this turn red, you have to", "Apply & Reboot", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
     if ( id == B_UP ) {
       writeEeprom();
@@ -249,15 +249,17 @@ void setup( void ) {
   // Info Tab
   {
     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Info/Help", "Info/Help" );
-    ESPUI.addControl( ControlType::Label, "Attention:", "As this WebUI is great and looks good, it is quite taxing on the controller. So close the browser after you are finished with configuring, as it can crash the controller without warning.", ControlColor::Carrot, tab );
+    ESPUI.addControl( ControlType::Label, "Attention:", "As this WebUI is great and looks good, it is quite taxing on the controller. So close the browser (actualy closing the tab, not minimizing) after you are finished with configuring. This helps with spurious crashes.", ControlColor::Carrot, tab );
 
-    ESPUI.addControl( ControlType::Label, "Network:", "Here the network is configured. Leave it on defaults, only if used as roof controller (only GPS + IMU), set port to send from to 5544.", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Basics:", "This works with setting up the different options in the panels. If an option requires a reboot (indicated by the darker blue and an asterisk after the title), press on the button \"Apply & Reboot\" and refresh the page after some time, usually 5-10 seconds. Settings with the lighter shade of blue are applied immediately, but are not saved to the permanent memory. You can do this with the \"Apply\" button. If the values are complete garbage or you want a fresh start, set the config to defaults in the \"Configurations\" tab.", ControlColor::Carrot, tab );
+
+    ESPUI.addControl( ControlType::Label, "Network:", "Here the network is configured. Leave it on defaults, only if used as roof controller (only GPS + IMU), set \"Port to send from\" to 5544.", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "CAN Bus/J1939:", "Enable if used. To use data from the vehicle bus as workswitch, configure it in the next tab.", ControlColor::Turquoise, tab );
-    ESPUI.addControl( ControlType::Label, "Work- and Steerswitch:", "If work- and steerswitches as physical inputs are used, enable them by configuring a GPIO. If you want to use the CAN-bus (J1939), set the type to a hitch position or RPM.", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Work- and Steerswitch:", "If work- and steerswitches as physical inputs are used, enable them by configuring a GPIO. If you want to use the CAN-bus (J1939), set the type to a hitch position or RPM with a threshold.", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "Wheel Angle Sensor:", "To enable the wheel angle sensor, configure the input first. If you use two arms connected to the tie rod, measure them exactly and configure the values. This is to calculate out the unlinearities.", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "Steering:", "Set up the type and the GPIOs", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "Steering PID:", "This controller uses its own PID-controller. No values are taken over from AOG, so everything is entered here.", ControlColor::Turquoise, tab );
-    ESPUI.addControl( ControlType::Label, "Sensors:", "Here the IMU and inclinometer are set up. The Mounting Correction is entered as three angles relative to the tractor axis, so the IMU can be mounted in every position, as long as the chips are positioned relative to each other with no difference (normaly, the manufacturer of the sensor pcb does this anyway). The FXAS2100/FXOS8700-combo is recomned, as they are mounted on the same PCB", ControlColor::Turquoise, tab );
+    ESPUI.addControl( ControlType::Label, "Sensors:", "Here the IMU and inclinometer are set up. The Mounting Correction is entered as three angles relative to the tractor axis, so the IMU can be mounted in every position, as long as the chips are positioned relative to each other with no difference (normaly, the manufacturer of the sensor pcb does this anyway). The FXAS2100/FXOS8700-combo is recomned, as they give the most precise roll/pitch/heading with the least amount of calibration.", ControlColor::Turquoise, tab );
     ESPUI.addControl( ControlType::Label, "NTRIP/GPS:", "Here the connection to the GPS is set up, also the NTRIP-client. Usualy, you want to send the data to AOG via UDP, a serial connection via USB is also possible. The TCP-Socket enables 3rd-party GPS-Software and configuring the GPS-Receiver with u-center.", ControlColor::Turquoise, tab );
   }
 
@@ -480,7 +482,7 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "Two Arms connected to tie rod", "1", ControlColor::Alizarin, sel );
     }
 
-    ESPUI.addControl( ControlType::Switcher, "Allow AgOpenGPS to overwrite Counts per Degree and Steer Angle Center", steerConfig.allowWheelAngleCenterAndCountsOverwrite ? "1" : "0", ControlColor::Peterriver, tab,
+    ESPUI.addControl( ControlType::Switcher, "Allow AgOpenGPS to overwrite Counts per Degree and Steer Angle Center (not recomned)", steerConfig.allowWheelAngleCenterAndCountsOverwrite ? "1" : "0", ControlColor::Peterriver, tab,
     []( Control * control, int id ) {
       steerConfig.allowWheelAngleCenterAndCountsOverwrite = control->value.toInt() == 1;
     } );
@@ -945,6 +947,42 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
     }
+  }
+
+  // Default Configurations Tab
+  {
+    uint16_t tab     = ESPUI.addControl( ControlType::Tab, "Configurations", "Configurations" );
+    ESPUI.addControl( ControlType::Label, "Attention:", "These Buttons here reset the whole config. This affects the WIFI too, if not configured otherwise below. You have to press \"Apply & Reboot\" above to actualy store them.", ControlColor::Carrot, tab );
+
+    {
+      ESPUI.addControl( ControlType::Switcher, "Retain WIFI settings", steerConfig.sendCalibrationDataFromImu ? "1" : "0", ControlColor::Peterriver, tab,
+      []( Control * control, int id ) {
+        steerConfig.retainWifiSettings = control->value.toInt() == 1;
+      } );
+    }
+    {
+      ESPUI.addControl( ControlType::Button, "Set Settings To Default*", "Defaults", ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        char ssid[24], password[24], hostname[24];
+
+        if ( steerConfig.retainWifiSettings ) {
+          memcpy( ssid, steerConfig.ssid, sizeof( ssid ) );
+          memcpy( password, steerConfig.password, sizeof( password ) );
+          memcpy( hostname, steerConfig.hostname, sizeof( hostname ) );
+        }
+
+        steerConfig = steerConfigDefaults;
+
+        if ( steerConfig.retainWifiSettings ) {
+          memcpy( steerConfig.ssid, ssid, sizeof( ssid ) );
+          memcpy( steerConfig.password, password, sizeof( password ) );
+          memcpy( steerConfig.hostname, hostname, sizeof( hostname ) );
+        }
+
+        setResetButtonToRed();
+      } );
+    }
+
   }
 
   i2cMutex = xSemaphoreCreateMutex();
