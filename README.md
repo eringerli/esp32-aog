@@ -56,6 +56,7 @@ Read this file through, before starting to half-ass it. It is not so hard to get
       1. install the "Esspressiv 32" platform
 1. install git: https://git-scm.com/downloads
    1. use the defaults in the setup, define atom as the default editor
+1. install all needed drivers for your platform. This is usualy done by installing the CP210x-driver, but consult the documentation of the manufacturer of your esp32. 
 
 ## Downloading the repository
 1. open a folder in the explorer, preferably not too deep inside the drive. `C:\` or a folder under it should work
@@ -73,6 +74,14 @@ Read this file through, before starting to half-ass it. It is not so hard to get
 1. connect the ESP32 over USB
 1. click on upload (the tile with the arrow)
 
+## Configuration
+
+All configuration is done in the WebUI. To connect to the created hotspot of the esp32, using a mobile device is normaly the simplest solution.
+
+To get the IP-adress of the esp32, go to your wifi-settings and look for the gateway-address or use a portscanner. After login in to the WebUI, you can then change the
+wifi to whatever you like. The esp32 tries to login, and if that fails, makes a new hotspot with the given ssid/password. 
+
+**The configuration is saved as long as there is no complete clearing of the flash of the esp32.** To  reset to the defaults, you either press the button in the WebUi or erase the flash of the esp32 with platformio/your editor. A new upload of the firmware doesn't affect the saved settings. 
 ## Updating the repository
 As there are sometimes new repositories/submodules added, enter the following to update:
 1. go to the esp32-aog repository and open a git bash-terminal
