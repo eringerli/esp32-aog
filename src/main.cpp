@@ -783,6 +783,13 @@ void setup( void ) {
     }
 
     {
+      ESPUI.addControl( ControlType::Switcher, "Invert Roll Axis (enable for older versions of AgOpenGPS)", steerConfig.invertRoll ? "1" : "0", ControlColor::Peterriver, tab,
+      []( Control * control, int id ) {
+        steerConfig.invertRoll = control->value.toInt() == 1;
+      } );
+    }
+
+    {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Mounting Correction (Roll) of Imu", String( steerConfig.mountCorrectionImuRoll ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.mountCorrectionImuRoll = control->value.toFloat();

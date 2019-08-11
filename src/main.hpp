@@ -188,6 +188,8 @@ struct SteerConfig {
     Fxos8700Fxas21002
   } inclinoType = InclinoType::None;
 
+  bool invertRoll = false;
+
   bool sendCalibrationDataFromImu = false;
 
   float mountCorrectionImuRoll = 0;

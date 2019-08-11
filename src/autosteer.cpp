@@ -359,6 +359,10 @@ void autosteerWorker100Hz( void* z ) {
 
             if ( initialisation.inclinoType != SteerConfig::InclinoType::None ) {
               roll = steerImuInclinometerData.roll * 16;
+
+              if ( steerConfig.invertRoll ) {
+                roll = -roll;
+              }
             } else {
               roll = 9999;
             }
