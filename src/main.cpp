@@ -962,7 +962,7 @@ void setup( void ) {
     ESPUI.addControl( ControlType::Label, "Attention:", "These Buttons here reset the whole config. This affects the WIFI too, if not configured otherwise below. You have to press \"Apply & Reboot\" above to actualy store them.", ControlColor::Carrot, tab );
 
     {
-      ESPUI.addControl( ControlType::Switcher, "Retain WIFI settings", steerConfig.sendCalibrationDataFromImu ? "1" : "0", ControlColor::Peterriver, tab,
+      ESPUI.addControl( ControlType::Switcher, "Retain WIFI settings", steerConfig.retainWifiSettings ? "1" : "0", ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         steerConfig.retainWifiSettings = control->value.toInt() == 1;
       } );
