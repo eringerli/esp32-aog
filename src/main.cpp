@@ -211,7 +211,7 @@ void setup( void ) {
   Serial.println( WiFi.getMode() == WIFI_AP ? WiFi.softAPIP() : WiFi.localIP() );
 
 
-  steerConfig.sendCalibrationDataFromImu = false;
+  steerImuInclinometerData.sendCalibrationDataFromImu = false;
 
   labelLoad       = ESPUI.addControl( ControlType::Label, "Load:", "", ControlColor::Turquoise );
   labelOrientation = ESPUI.addControl( ControlType::Label, "Orientation:", "", ControlColor::Emerald );
@@ -764,9 +764,9 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "FXOS8700/FXAS21002", "2", ControlColor::Alizarin, sel );
     }
     {
-      ESPUI.addControl( ControlType::Switcher, "Send Calibration Data from IMU to USB", steerConfig.sendCalibrationDataFromImu ? "1" : "0", ControlColor::Peterriver, tab,
+      ESPUI.addControl( ControlType::Switcher, "Send Calibration Data from IMU to USB", steerImuInclinometerData.sendCalibrationDataFromImu ? "1" : "0", ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
-        steerConfig.sendCalibrationDataFromImu = control->value.toInt() == 1;
+        steerImuInclinometerData.sendCalibrationDataFromImu = control->value.toInt() == 1;
       } );
     }
 

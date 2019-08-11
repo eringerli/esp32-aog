@@ -190,8 +190,6 @@ struct SteerConfig {
 
   bool invertRoll = false;
 
-  bool sendCalibrationDataFromImu = false;
-
   float mountCorrectionImuRoll = 0;
   float mountCorrectionImuPitch = 0;
   float mountCorrectionImuYaw = 0;
@@ -362,7 +360,7 @@ struct SteerMachineControl {
 extern SteerMachineControl steerMachineControl;
 
 struct SteerImuInclinometerData {
-//   Average<float, float, 10> averageHeading;
+  bool sendCalibrationDataFromImu = false;
 
   float heading;
   float roll;

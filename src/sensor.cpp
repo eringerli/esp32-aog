@@ -378,7 +378,7 @@ void sensorWorker100HzPoller( void* z ) {
         xSemaphoreGive( i2cMutex );
       }
 
-      if ( steerConfig.sendCalibrationDataFromImu ) {
+      if ( steerImuInclinometerData.sendCalibrationDataFromImu ) {
         // Print the sensor data
         Serial.print( "Raw:" );
         Serial.print( fxos8700.accel_raw.x );
