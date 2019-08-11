@@ -731,17 +731,19 @@ void initSensors() {
     Control* handle = ESPUI.getControl( labelStatusInclino );
 
     if ( mma.begin() ) {
+      initialisation.inclinoType = SteerConfig::InclinoType::MMA8451;
+
       handle->value = "MMA8451 found & initialized";
       handle->color = ControlColor::Emerald;
-      initialisation.inclinoType = SteerConfig::InclinoType::MMA8451;
 
       mma.setRange( MMA8451_RANGE_2_G );
       mma.setDataRate( MMA8451_DATARATE_200_HZ );
       mma.setFifoSettings( MMA8451_FIFO_CIRCULAR );
     } else {
+      initialisation.inclinoType = SteerConfig::InclinoType::None;
+
       handle->value = "MMA8451 not found";
       handle->color = ControlColor::Alizarin;
-      initialisation.inclinoType = SteerConfig::InclinoType::None;
     }
 
     ESPUI.updateControl( handle );
@@ -751,9 +753,10 @@ void initSensors() {
     Control* handle = ESPUI.getControl( labelStatusImu );
 
     if ( bno.begin() ) {
+      initialisation.imuType = SteerConfig::ImuType::BNO055;
+
       handle->value = "BNO055 found & initialized";
       handle->color = ControlColor::Emerald;
-      initialisation.imuType = SteerConfig::ImuType::BNO055;
 
       displaySensorOffsets( bno055CalibrationData );
 
@@ -763,47 +766,61 @@ void initSensors() {
 
       bno.setExtCrystalUse( true );
     } else {
+      initialisation.imuType = SteerConfig::ImuType::None;
+
       handle->value = "BNO055 not found";
       handle->color = ControlColor::Alizarin;
-      initialisation.imuType = SteerConfig::ImuType::None;
     }
 
     ESPUI.updateControl( handle );
   }
 
   if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
-       steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002
-     ) {
-    Control* handle = ESPUI.getControl( labelStatusImu );
+       steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
 
     if ( fxas2100.begin() && fxos8700.begin( ACCEL_RANGE_2G ) ) {
 
-      handle->value = "FXAS2100/FXOS8700 found & initialized";
-      handle->color = ControlColor::Emerald;
-
       if ( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
         initialisation.imuType = steerConfig.imuType;
+
+        Control* handle = ESPUI.getControl( labelStatusImu );
+        handle->value = "FXAS2100/FXOS8700 found & initialized";
+        handle->color = ControlColor::Emerald;
+        ESPUI.updateControl( handle );
       }
 
       if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
         initialisation.inclinoType = steerConfig.inclinoType;
+
+        Control* handle = ESPUI.getControl( labelStatusInclino );
+        handle->value = "FXAS2100/FXOS8700 found & initialized";
+        handle->color = ControlColor::Emerald;
+        ESPUI.updateControl( handle );
       }
 
       ahrs.begin( 100 );
     } else {
-      handle->value = "FXAS2100/FXOS8700 not found";
-      handle->color = ControlColor::Alizarin;
+
 
       if ( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
         initialisation.imuType = SteerConfig::ImuType::None;
+
+        Control* handle = ESPUI.getControl( labelStatusImu );
+        handle->value = "FXAS2100/FXOS8700 not found";
+        handle->color = ControlColor::Alizarin;
+        ESPUI.updateControl( handle );
       }
 
       if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
         initialisation.inclinoType = SteerConfig::InclinoType::None;
+
+        Control* handle = ESPUI.getControl( labelStatusInclino );
+        handle->value = "FXAS2100/FXOS8700 not found";
+        handle->color = ControlColor::Alizarin;
+        ESPUI.updateControl( handle );
       }
     }
 
-    ESPUI.updateControl( handle );
   }
 
   // initialise ads1115 everytime, even if not avaible (no answer in the init -> just sending)
