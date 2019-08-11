@@ -70,16 +70,16 @@ class RingBuffer {
       *writePointer++ = c;
 
       // bei Überlauf auch readPointer inkrementieren
-      if( dataInBuffer < ( Size * sizeof( T ) ) ) {
+      if ( dataInBuffer < ( Size * sizeof( T ) ) ) {
         dataInBuffer++;
       } else {
-        if( ++readPointer >= &Buffer[Size] ) {
+        if ( ++readPointer >= &Buffer[Size] ) {
           readPointer = Buffer;
         }
       }
 
       // Überlauf
-      if( writePointer >= &( Buffer[Size] ) ) {
+      if ( writePointer >= &( Buffer[Size] ) ) {
         writePointer = Buffer;
       }
 
@@ -99,7 +99,7 @@ class RingBuffer {
       TCritSect critical;
 
       // auf leeren Puffer prüfen
-      if( dataInBuffer ) {
+      if ( dataInBuffer ) {
         // hole das Zeichen
         c = *readPointer++;
 
@@ -107,7 +107,7 @@ class RingBuffer {
         dataInBuffer--;
 
         // Überlauf
-        if( readPointer >= &( Buffer[Size] ) ) {
+        if ( readPointer >= &( Buffer[Size] ) ) {
           readPointer = Buffer;
         }
       }
@@ -123,7 +123,7 @@ class RingBuffer {
       TCritSect critical;
 
       // auf leeren Puffer prüfen
-      if( dataInBuffer ) {
+      if ( dataInBuffer ) {
         // hole das Zeichen
         readPointer++;
 
@@ -131,7 +131,7 @@ class RingBuffer {
         dataInBuffer--;
 
         // Überlauf
-        if( readPointer >= &( Buffer[Size] ) ) {
+        if ( readPointer >= &( Buffer[Size] ) ) {
           readPointer = Buffer;
         }
       }

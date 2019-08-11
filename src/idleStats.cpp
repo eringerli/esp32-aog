@@ -50,8 +50,9 @@ void idleStatsWorker( void* z ) {
   constexpr TickType_t xFrequency = 1000;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-    String str;
-    str.reserve( 40 );
+  String str;
+  str.reserve( 40 );
+
   while ( 1 ) {
     str = "Core0: ";
     str += 1000 - idleCtrCore0;
