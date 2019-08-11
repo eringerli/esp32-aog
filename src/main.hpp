@@ -315,9 +315,9 @@ enum class EepromAddresses : uint16_t {
   CRC = 0,
   Validator = 5,
   SizeOfConfig = 7,
-  SteerSettings = 9,
-  Bno055CalibrationData = SteerSettings + sizeof( SteerConfig ),
-  Fxos8700Fxas21002CalibrationData = Bno055CalibrationData + sizeof( bno055CalibrationData )
+  Bno055CalibrationData = 9,
+  Fxos8700Fxas21002CalibrationData = Bno055CalibrationData + sizeof( bno055CalibrationData ),
+  SteerConfig = Fxos8700Fxas21002CalibrationData + sizeof( fxos8700Fxas21002CalibrationData )
 };
 
 struct SteerSettings {
