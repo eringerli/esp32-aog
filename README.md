@@ -37,10 +37,41 @@ Software to control the tractor from AgOpenGPS. Can also be used as an NTRIP-cli
   D-part of the PID controller is used in newer versions for sidehill draft compensation). General rule: if it is configurable in the WebUI, the value in AgOpenGPS
   doesn't matter.
 
+# Schematics
+
+![Schematics](doc/schema.png)
+
+The configuration has to match the connections for the IBT2 (PWM, enable) and the work and steer switches. This schematics is with modules from adafruit, but you
+can use other brands when you adjust the firmware for it. This is usualy done by changing the `board` in `platformio.ini`. 
+
+An example of a itemlist is below:
+
+Amount | Id | Supplier | Description
+--- | ---- | -------- | ----------------------------------------------------------------------------
+1x  | 3405 | Adafruit | HUZZAH32 – ESP32 Feather Board (with headers)
+1x  | 2884 | Adafruit | FeatherWing Proto - Prototyping Add-on For All Feather Boards
+1x  | 2886 | Adafruit | Header Kit for Feather - 12-pin and 16-pin Female Header Set
+1x  | 3463 | Adafruit | Precision NXP 9-DOF Breakout Board - FXOS8700 + FXAS21002
+1x  | 1085 | Adafruit | ADS1115 16-Bit ADC - 4 Channel with Programmable Gain Amplifier
+1x  | 1385 | Adafruit | UBEC DC/DC Step-Down (Buck) Converter - 5V @ 3A output
+1x  |      | Various  | Some wires in different colors to connect the parts
+1x  |      | Various  | IBT-2; BTS7960 based motor driver
+1x  |      | Various  | Rotary Angle Sensor, preferably hall effect and with 12V supply
+1x  |      | Ardusimple | simpleRTK2B (ZED-F9P L1+L2 GNSS module)
+
+## Alternations:
+* Use other modules, as long as the chips on it are the same.
+* Instead of the UBEC, you can use another way to convert 12V -> 5V.
+* You can split this into two units: the motor controller and the GPS/IMU stuff.
+* You can solder the wires directly to the esp32 feather, but with the protoboard you can take it away for programming or replacing it.
+
+> Please consider buying quality components by genuine resellers to support the development of new cool stuff.
+
 # Installation
 
 ## Warning before you start
 Read this file through, before starting to half-ass it. It is not so hard to get a working system, just give it enough time and install it in this order.
+Some packets take a real long time to install with no visible progress. Just wait until finished.
 
 ## Install Prerequisites
 1. install atom: https://atom.io/
