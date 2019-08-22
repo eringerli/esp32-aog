@@ -189,7 +189,7 @@ Wire.begin( ( int )steerConfig.gpioSDA, ( int )steerConfig.gpioSCL, steerConfig.
       digitalWrite( 13, LOW );
       WiFi.mode( WIFI_AP );
       WiFi.softAPConfig( apIP, apIP, IPAddress( 255, 255, 255, 0 ) );
-      WiFi.softAP( steerConfig.ssid );
+      WiFi.softAP( steerConfig.hostname );
 
       timeout = 5;
 
