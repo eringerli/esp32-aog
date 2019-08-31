@@ -108,7 +108,7 @@ uint16_t getAnalogInput(uint8_t port)  const {
   return (uint16_t)analogRead(portMapping[port]);
 }
 uint16_t getAnalogInputScaled(uint8_t port)  const {
-  return getAnalogInput(port) << 6; //6 bits shifted since 10 bit adc
+  return (float)getAnalogInput(port) / 1024.0;
 }
 void setDigitalOutput(uint8_t port, bool state) {
   if (state) {

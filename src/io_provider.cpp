@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string>
+#include <esp32-hal-adc.h>
 
 enum class IoProviders : uint8_t {
   None = 0,
@@ -31,15 +32,15 @@ public:
   // returns the pin number of a port on the microcontroler.
   // should only be used if necessary (e.g. setting up serial ports)
   // other application has to configure the pin
-  uint8_t getRawIo(uint8_t port)  const {
+  gpio_num_t getRawIo(uint8_t port)  const {
     // for all except ESP32 always invalid
-    return 255;
+    return GPIO_NUM_0;
   }
 
   // normal interactions during runtime
   bool getDigitalInput(uint8_t port)  const {return false;}
   uint16_t getAnalogInput(uint8_t port)  const {return UINT16_MAX;}
-  uint16_t getAnalogInputScaled(uint8_t port)  const {return UINT16_MAX;}
+  float getAnalogInputScaled(uint8_t port)  const {return 0.0f;}
   void setDigitalOutput(uint8_t port, bool state) {};
   void setPwmOutput(uint8_t port, uint8_t dutyCycle) {};
 

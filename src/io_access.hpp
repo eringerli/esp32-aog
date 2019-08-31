@@ -106,7 +106,7 @@ public:
   // normal interactions during runtime
   bool getDigitalInput(uint8_t port) {return provider[port / 32] ->  getDigitalInput(port % 32);}
   uint16_t getAnalogInput(uint8_t port) {return provider[port / 32] ->  getAnalogInput(port % 32);}
-  uint16_t getAnalogInputScaled(uint8_t port) {return provider[port / 32] ->  getAnalogInputScaled(port % 32);} // scaled to a 16 bit resolution
+  float getAnalogInputScaled(uint8_t port) {return provider[port / 32] ->  getAnalogInputScaled(port % 32);} // FSR scaled to a 0-1
   void setDigitalOutput(uint8_t port, bool state) {provider[port / 32] -> setDigitalOutput(port % 32, state);}
   void setPwmOutput(uint8_t port, uint8_t dutyCycle) {provider[port / 32] -> setPwmOutput(port % 32, dutyCycle);}
 
