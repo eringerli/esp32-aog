@@ -137,8 +137,6 @@ void setup( void ) {
   Serial.begin( 115200 );
   Serial.println( "Setup()" );
 
-  Wire.begin( ( int )steerConfig.gpioSDA, ( int )steerConfig.gpioSCL, steerConfig.i2cBusSpeed );
-
   pinMode( 13, OUTPUT );
   digitalWrite( 13, LOW );
 
@@ -157,6 +155,9 @@ void setup( void ) {
     Serial.println( "Not read from EEPROM" );
     writeEeprom();
   }
+
+// Init I2C
+Wire.begin( ( int )steerConfig.gpioSDA, ( int )steerConfig.gpioSCL, steerConfig.i2cBusSpeed );
 
 #if defined(ESP32)
   WiFi.setHostname( steerConfig.hostname );
@@ -188,7 +189,7 @@ void setup( void ) {
       digitalWrite( 13, LOW );
       WiFi.mode( WIFI_AP );
       WiFi.softAPConfig( apIP, apIP, IPAddress( 255, 255, 255, 0 ) );
-      WiFi.softAP( steerConfig.ssid );
+      WiFi.softAP( steerConfig.hostname );
 
       timeout = 5;
 
@@ -1025,4 +1026,3 @@ void loop( void ) {
   dnsServer.processNextRequest();
   vTaskDelay( 100 );
 }
-
