@@ -109,8 +109,9 @@ Some packets take a real long time to install with no visible progress. Just wai
 
 All configuration is done in the WebUI. To connect to the created hotspot of the esp32, using a mobile device is normaly the simplest solution.
 
-To get the IP-adress of the esp32, go to your wifi-settings and look for the gateway-address or use a portscanner. After login in to the WebUI, you can then change the
-wifi to whatever you like. The esp32 tries to login, and if that fails, makes a new hotspot with the given ssid/password. 
+To get the IP-adress of the esp32, go to your wifi-settings and look for the gateway-address or use a portscanner. Alternatively, connect the ESP32 to the USB and open a monitor on it. It should print the SSID/IP address. 
+
+After login in to the WebUI, you can then change the wifi to whatever you like. The esp32 tries to login, and if that fails, makes a new hotspot with the given ssid/password. 
 
 **The configuration is saved as long as there is no complete clearing of the flash of the esp32.** To  reset to the defaults, you either press the button in the WebUi or erase the flash of the esp32 with platformio/your editor. A new upload of the firmware doesn't affect the saved settings. 
 ## Updating the repository
