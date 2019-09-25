@@ -123,3 +123,8 @@ As there are sometimes new repositories/submodules added, enter the following to
 1. `git submodule update`
 
 Repeat them as needed.
+
+# Donation
+If you like the software, you can donate me some money. But not too much, I mainly wrote this to use myself.
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/eringerli)
