@@ -21,62 +21,55 @@
 // SOFTWARE.
 
 #include <ESPUI.h>
-
-#include "main.hpp"
+#include "esp_freertos_hooks.h"
+#include "webUi.hpp"
+#include "idleStats.hpp"
 
 volatile uint16_t idleCtrCore0 = 0;
 volatile uint16_t idleCtrCore1 = 0;
-void core0IdleWorker( void* z ) {
-  constexpr TickType_t xFrequency = 1;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  while ( 1 ) {
+bool core0IdleWorker( void ) {
+  static TickType_t xLastWakeTime0;
+  if (xLastWakeTime0 != xTaskGetTickCount()) {
+    xLastWakeTime0 = xTaskGetTickCount();
     idleCtrCore0++;
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
+  return true;
 }
 
-void core1IdleWorker( void* z ) {
-  constexpr TickType_t xFrequency = 1;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  while ( 1 ) {
+bool core1IdleWorker( void ) {
+  static TickType_t xLastWakeTime1;
+  if (xLastWakeTime1 != xTaskGetTickCount()) {
+    xLastWakeTime1 = xTaskGetTickCount();
     idleCtrCore1++;
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
+  return true;
 }
 
-void idleStatsWorker( void* z ) {
-  constexpr TickType_t xFrequency = 1000;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
+void idleStats() {
   String str;
-  str.reserve( 40 );
+  str.reserve( 50 );
 
-  while ( 1 ) {
-    str = "Core0: ";
-    str += 1000 - idleCtrCore0;
-    str += "‰<br/>";
-    str += "Core1: ";
-    str += 1000 - idleCtrCore1;
-    str += "‰<br/>Uptime: ";
-    str += millis() / 1000;
-    str += "s";
+  str = "Core0: ";
+  str += 1000 - idleCtrCore0;
+  str += "‰<br/>Core1: ";
+  str += 1000 - idleCtrCore1;
+  str += "‰<br/>Uptime: ";
+  str += millis() / 1000;
+  str += "s<br/>Heap: ";
+  str += ESP.getFreeHeap()/1024;
+  str += "kB";
 
-    Control* labelLoadHandle = ESPUI.getControl( labelLoad );
-    labelLoadHandle->value = str;
-    ESPUI.updateControl( labelLoadHandle );
+  Control* labelLoadHandle = ESPUI.getControl( webLabelLoad );
+  labelLoadHandle->value = str;
+  ESPUI.updateControl( labelLoadHandle );
 
-    idleCtrCore0 = 0;
-    idleCtrCore1 = 0;
-
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
-  }
+  idleCtrCore0 = 0;
+  idleCtrCore1 = 0;
 }
 
 
 void initIdleStats() {
-  xTaskCreatePinnedToCore( core0IdleWorker, "Core0IdleWorker", 1024, NULL, tskIDLE_PRIORITY, NULL, 0 );
-  xTaskCreatePinnedToCore( core1IdleWorker, "Core1IdleWorker", 1024, NULL, tskIDLE_PRIORITY, NULL, 1 );
-  xTaskCreate( idleStatsWorker, "IdleStats", 4096, NULL, 10, NULL );
+  esp_register_freertos_idle_hook_for_cpu(core0IdleWorker, 0);
+  esp_register_freertos_idle_hook_for_cpu(core1IdleWorker, 1);
 }

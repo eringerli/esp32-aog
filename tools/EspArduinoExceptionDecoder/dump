@@ -1,0 +1,22 @@
+uru Meditation Error: Core  1 panic'ed (LoadProhibited). Exception was unhandled.
+
+Core 1 register dump:
+
+PC      : 0x401cecaa  PS      : 0x00060730  A0      : 0x801cf375  A1      : 0x3ffe12b0  
+
+A2      : 0x3ffe12dc  A3      : 0x00000064  A4      : 0x3ffc8b00  A5      : 0x00000000  
+
+A6      : 0x00000000  A7      : 0x00000002  A8      : 0x801cf034  A9      : 0x3ffe12a0  
+
+A10     : 0x3ffdfc8c  A11     : 0x3ffdfc6e  A12     : 0x00000052  A13     : 0x3ffdfcde  
+
+A14     : 0x00007d30  A15     : 0x3a22726f  SAR     : 0x00000010  EXCCAUSE: 0x0000001c  
+
+EXCVADDR: 0x00000068  LBEG    : 0x4000c2e0  LEND    : 0x4000c2f6  LCOUNT  : 0x00000000  
+
+
+
+Backtrace: 0x401cecaa:0x3ffe12b0 0x401cf372:0x3ffe12d0 0x401cfcfc:0x3ffe1300 0x401cfd23:0x3ffe1320 0x400d82a3:0x3ffe1340 0x400d1b09:0x3ffe13b0 0x4008f2d9:0x3ffe13e0
+
+
+
