@@ -93,10 +93,12 @@ void setup() {
   }
 
   // generic initializations
-  inputsSwitchesInit();
-  inputsWheelAngleInit();
-  uturnInit();
-  steeringInit();
+  if (hwSetup != 0) {
+    inputsSwitchesInit();
+    inputsWheelAngleInit();
+    uturnInit();
+    steeringInit();
+  }
   // set up webinterface
   webStart();
 

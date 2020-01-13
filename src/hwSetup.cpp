@@ -34,7 +34,11 @@ void hwSetupNodeMcuCytronNmea() {
   }
   //internal ADC
   analogReadResolution(10);
-  
+  // analog inputs
+  ioAccessWebListAnalogIn = &hwSetupNodeMcuCytronWebAnalogIn;
+  ioAccessWebListDigitalOut = &hwSetupNodeMcuCytronWebDigitalOut;
+  ioAccessMotor1 = &hwSetupNodeMcuCytroMotor1;
+
   if (hwInitErrors) {
     status.hardwareStatus = Status::Hardware::error;
   } else {
@@ -66,6 +70,18 @@ void hwSetupNodeMcuCytronNmea() {
   gpsRtcmSetup(GpsRtcmData::RtcmDestination::gps1);
   gpsNmeasingleReader();
 }
+
+void hwSetupNodeMcuCytronWebAnalogIn(int parent) {
+  // TODO
+}
+void hwSetupNodeMcuCytronWebDigitalOut(int parent){
+  // TODO
+}
+void hwSetupNodeMcuCytroMotor1(int pwm){
+  // TODO
+}
+
+
 
 void hwSetupF9PIoBoardNmea() {
   bool hwInitErrors = false;
@@ -112,7 +128,7 @@ void hwSetupF9PIoBoardNmea() {
   ioAccessInitAsDigitalOutput(80);
   ioAccessInitPwmChannel(0, 5000);
   ioAccessInitAttachToPwmChannel(4, 0);
-   ioAccessMotor1 = &hwSetupF9PIoBoardMotor1;
+  ioAccessMotor1 = &hwSetupF9PIoBoardMotor1;
 
   // digital Outputs
   ioAccessInitAsDigitalOutput(76);

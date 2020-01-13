@@ -15,5 +15,8 @@
   void hwSetupF9PIoBoardMotor1(int pwm);
 
   void hwSetupNodeMcuCytronNmea();
-  // TODO, functions missing
+  void hwSetupNodeMcuCytronWebAnalogIn(int parent);
+  void hwSetupNodeMcuCytronWebDigitalOut(int parent);
+  void hwSetupNodeMcuCytroMotor1(int pwm);
+
 #endif
