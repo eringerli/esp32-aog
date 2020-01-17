@@ -22,8 +22,11 @@ struct InputsSwitchesConfig {
   bool steerSwitchIsButton;
   bool steerSwitchInvert;
   uint8_t steerSwitchThreshold;
+  bool steerEnableInvert;
+  uint8_t steerEnableThreshold;
   uint8_t workSwitchThreshold;
   uint8_t steerSwitchPort;
+  uint8_t steerEnablePort = 254;
   uint8_t workSwitchPort;
 };
 extern InputsSwitchesConfig inputsSwitchesSetup;

@@ -76,7 +76,7 @@ void inputsSwitchesInit() {
     ESPUI.addControl( ControlType::Number, "Steerswitch switch-point in %", String(inputsSwitchesSetup.steerSwitchThreshold), ControlColor::Wetasphalt, webTabWorkSteerSwitch,
       []( Control * control, int id ) {
         inputsSwitchesSetup.steerSwitchThreshold = control->value.toInt();
-        preferences.putUInt("inputsWsSp", inputsSwitchesSetup.steerSwitchThreshold);
+        preferences.putUInt("inputsSsSp", inputsSwitchesSetup.steerSwitchThreshold);
         control->color = ControlColor::Carrot;
         ESPUI.updateControl( control );
       } );
@@ -99,6 +99,37 @@ void inputsSwitchesInit() {
         ESPUI.updateControl( control );
       } );
 
+    // Additional SteerEnable
+    inputsSwitchesSetup.steerEnablePort = preferences.getUChar("inputsSEIo", 254);
+    sel = ESPUI.addControl( ControlType::Select, "Steer enabled input", (String)inputsSwitchesSetup.steerEnablePort, ControlColor::Wetasphalt, webTabWorkSteerSwitch,
+      []( Control * control, int id ) {
+        inputsSwitchesSetup.steerEnablePort = control->value.toInt();
+        preferences.putUChar("inputsSEIo", inputsSwitchesSetup.steerEnablePort);
+        control->color = ControlColor::Carrot;
+        ESPUI.updateControl( control );
+      } );
+    ESPUI.addControl( ControlType::Option, "True", "254", ControlColor::Alizarin, sel );
+    ESPUI.addControl( ControlType::Option, "False", "253", ControlColor::Alizarin, sel );
+    ioAccessWebListAnalogIn(sel);
+
+    inputsSwitchesSetup.steerEnableThreshold = preferences.getUChar("inputsSESp", 50);
+    ESPUI.addControl( ControlType::Number, "Steerenabled switch-point in %", String(inputsSwitchesSetup.steerEnableThreshold), ControlColor::Wetasphalt, webTabWorkSteerSwitch,
+      []( Control * control, int id ) {
+        inputsSwitchesSetup.steerEnableThreshold = control->value.toInt();
+        preferences.putUInt("inputsSESp", inputsSwitchesSetup.steerEnableThreshold);
+        control->color = ControlColor::Carrot;
+        ESPUI.updateControl( control );
+      } );
+
+    inputsSwitchesSetup.steerEnableInvert = preferences.getBool("inputsSEInv");
+    ESPUI.addControl( ControlType::Switcher, "Steer enable invert value", String( (int)inputsSwitchesSetup.steerEnableInvert ) , ControlColor::Wetasphalt, webTabWorkSteerSwitch,
+      []( Control * control, int id ) {
+        inputsSwitchesSetup.steerEnableInvert = (boolean)control->value.toInt();
+        preferences.putBool("inputsSEInv", inputsSwitchesSetup.steerEnableInvert );
+        control->color = ControlColor::Carrot;
+        ESPUI.updateControl( control );
+      } );
+
     // start task
     xTaskCreate( inputsSwitchesTask, "Switches", 4096, NULL, 4, NULL );
 }
@@ -108,6 +139,7 @@ void inputsSwitchesTask(void *z) {
   bool steerSwitchLastValidState = false;
   bool steerSwitchLastState = false;
   bool workSwitchLastState = false;
+  bool steerEnabledLastState = false;
 
   for ( ;; ) {
     // workSwitch
@@ -132,6 +164,15 @@ void inputsSwitchesTask(void *z) {
       }
     }
 
+    // steer enable input
+    currentValue = fabs(ioAccessGetAnalogInput(inputsSwitchesSetup.steerEnablePort));
+    if (steerEnabledLastState && currentValue < ((inputsSwitchesSetup.workSwitchThreshold - inputsHysteresis)/100.0)) {
+      steerEnabledLastState = false;
+    } else if (!steerEnabledLastState && currentValue > ((inputsSwitchesSetup.workSwitchThreshold + inputsHysteresis)/100.0)) {
+      steerEnabledLastState = true;
+    }
+
+
     // steerswitch
     currentValue = fabs(ioAccessGetAnalogInput(inputsSwitchesSetup.steerSwitchPort));
     if (inputsSwitchesSetup.steerSwitchInvert) { // invert the raw value => hysteresislogic has only one case, also the "rising edge" logik for the button
@@ -151,18 +192,22 @@ void inputsSwitchesTask(void *z) {
         newValue = false;
       }
     }
-    if (!steerSwitchLastValidState && steerSwitchLastState && newValue) { // false => true
-      steerSwitchLastValidState = true;
-      if (inputsSwitchesSetup.steerSwitchIsButton) {
-        udpActualData.steerSwitch = !udpActualData.steerSwitch;
-      } else {
-        udpActualData.steerSwitch = true;
+    if (steerEnabledLastState) {
+      if (!steerSwitchLastValidState && steerSwitchLastState && newValue) { // false => true
+        steerSwitchLastValidState = true;
+        if (inputsSwitchesSetup.steerSwitchIsButton) {
+          udpActualData.steerSwitch = !udpActualData.steerSwitch;
+        } else {
+          udpActualData.steerSwitch = true;
+        }
+      } else if (steerSwitchLastValidState && !steerSwitchLastState && !newValue) { // true => false
+        steerSwitchLastValidState = false;
+        if (!inputsSwitchesSetup.steerSwitchIsButton) {
+          udpActualData.steerSwitch = false;
+        }
       }
-    } else if (steerSwitchLastValidState && !steerSwitchLastState && !newValue) { // true => false
-      steerSwitchLastValidState = false;
-      if (!inputsSwitchesSetup.steerSwitchIsButton) {
-        udpActualData.steerSwitch = false;
-      }
+    } else {
+      udpActualData.steerSwitch = true; // disabled
     }
     steerSwitchLastState = newValue;
 
