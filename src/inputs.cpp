@@ -166,12 +166,15 @@ void inputsSwitchesTask(void *z) {
 
     // steer enable input
     currentValue = fabs(ioAccessGetAnalogInput(inputsSwitchesSetup.steerEnablePort));
+    if (inputsSwitchesSetup.steerEnableInvert) { // invert the raw value => hysteresislogic has only one case, also the "rising edge" logik for the button
+      currentValue = 1.0 - currentValue;
+    }
+
     if (steerEnabledLastState && currentValue < ((inputsSwitchesSetup.workSwitchThreshold - inputsHysteresis)/100.0)) {
       steerEnabledLastState = false;
     } else if (!steerEnabledLastState && currentValue > ((inputsSwitchesSetup.workSwitchThreshold + inputsHysteresis)/100.0)) {
       steerEnabledLastState = true;
     }
-
 
     // steerswitch
     currentValue = fabs(ioAccessGetAnalogInput(inputsSwitchesSetup.steerSwitchPort));
