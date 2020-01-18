@@ -67,7 +67,7 @@ void udpHandlerSendData( void* z ) {
     // switches
     temp = 0;
     temp |= (udpActualData.remoteSwitch << 2); //put remote in bit 2
-    temp |= (udpActualData.steerSwitch << 1);   //put steerswitch status in bit 1 position
+    temp |= ((!udpActualData.steerSwitch) << 1);   //put steerswitch status in bit 1 position, AOG interprets false as active
     temp |= udpActualData.workSwitch;
     toSend[8] = (byte)temp;
 

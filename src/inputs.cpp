@@ -207,7 +207,7 @@ void inputsSwitchesTask(void *z) {
         }
       }
     } else {
-      udpActualData.steerSwitch = true; // disabled
+      udpActualData.steerSwitch = false;
     }
     steerSwitchLastState = newValue;
 

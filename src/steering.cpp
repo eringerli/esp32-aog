@@ -120,13 +120,13 @@ void steeringTask( void* z ) {
 
   while(1) {
     // check all conditions when there should be no output
-    if (udpActualData.steerSwitch ||                    // steering disabled == true
+    if (!udpActualData.steerSwitch ||                    // steering disabled == true
         steeringSettings.testMinPwm ||                           // just minPWM test
         udpAogData.lastReceived7FFE < (millis() - udpTimeout) || // timeout
         udpAogData.distanceFromGuidanceLine == 32020 ) {         // AOG disabled
       // no steering active
       if (udpAogData.lastReceived7FFE < (millis() - udpTimeout)) {
-        udpActualData.steerSwitch = true;  // if reason is timeout, disable steer switch (if button, then it avoids nasty surprises later when there is communication again)
+        udpActualData.steerSwitch = false;  // if reason is timeout, disable steer switch (if button, then it avoids nasty surprises later when there is communication again)
                                             // if switch, then it will not help
       }
       // disable pid
