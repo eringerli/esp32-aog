@@ -61,7 +61,7 @@ void gpsRtcmSetup(GpsRtcmData::RtcmDestination rtcmdestination) {
       } );
     ESPUI.addControl( ControlType::Number, "Ntrip GGA interval", String(preferences.getUInt("gpsNtripGga", 30)), ControlColor::Wetasphalt, webTabGPS,
       []( Control * control, int id ) {
-        preferences.putUInt("gpsNtripPort", control->value.toInt());
+        preferences.putUInt("gpsNtripGga", control->value.toInt());
         control->color = ControlColor::Carrot;
         ESPUI.updateControl( control );
         webChangeNeedsReboot();
