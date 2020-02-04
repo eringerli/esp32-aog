@@ -92,7 +92,7 @@ Some packets take a real long time to install with no visible progress. Just wai
 ## Downloading the repository
 1. open a folder in the explorer, preferably not too deep inside the drive. `C:\` or a folder under it should work
 1. right click on it and choose "Git Bash Here"
-1. enter `git clone https://github.com/eringerli/esp32-aog.git`
+1. enter `git clone https://github.com/doppelgrau/esp32-aog.git`
 1. enter `cd esp32-aog`
 1. enter `git submodule init`
 1. enter `git submodule update`
