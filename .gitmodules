@@ -11,3 +11,12 @@
 [submodule "lib/AutoPID"]
 	path = lib/AutoPID
 	url = https://github.com/doppelgrau/AutoPID
+[submodule "lib/MadgwickAHRS"]
+	path = lib/MadgwickAHRS
+	url = https://github.com/arduino-libraries/MadgwickAHRS
+[submodule "lib/MahonyAHRS"]
+	path = lib/MahonyAHRS
+	url = https://github.com/PaulStoffregen/MahonyAHRS
+[submodule "lib/Quaternion"]
+	path = lib/Quaternion
+	url = https://github.com/doppelgrau/Quaternion

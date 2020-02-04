@@ -105,7 +105,7 @@ void steeringInit() {
 
 void steeringTask( void* z ) {
   constexpr TickType_t xFrequency = 20;
-  constexpr time_t udpTimeout = 1000;
+  constexpr time_t udpTimeout = 1500;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   float pidOutput = 0;

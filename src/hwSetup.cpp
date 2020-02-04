@@ -7,7 +7,7 @@
 #include "gpsNmea.hpp"
 #include "ioAccess.hpp"
 #include "network.hpp"
-
+#include "imuHardware.hpp"
 
 
 void hwSetupInitial() {
@@ -126,7 +126,7 @@ void hwSetupF9PIoBoardNmea() {
   // motor
   ioAccessInitAsDigitalOutput(79);
   ioAccessInitAsDigitalOutput(80);
-  ioAccessInitPwmChannel(0, 5000);
+  ioAccessInitPwmChannel(0, 500);
   ioAccessInitAttachToPwmChannel(4, 0);
   ioAccessMotor1 = &hwSetupF9PIoBoardMotor1;
 
@@ -141,6 +141,11 @@ void hwSetupF9PIoBoardNmea() {
   // analog inputs
   ioAccessWebListAnalogIn = &hwSetupF9PIoBoardWebAnalogIn;
   ioAccessWebListDigitalOut = &hwSetupF9PIoBoardWebDigitalOut;
+
+  // imu
+  //if (!imuHardwareLSM9DS1Init()) {
+  //  hwInitErrors = false;
+  //}
 
   if (hwInitErrors) {
     status.hardwareStatus = Status::Hardware::error;

@@ -38,6 +38,7 @@
 #include "inputs.hpp"
 #include "uturn.hpp"
 #include "steering.hpp"
+#include "imu.hpp"
 
 ///////////////////////////////////////////////////////////////////////////
 // global data
@@ -98,6 +99,7 @@ void setup() {
     inputsWheelAngleInit();
     uturnInit();
     steeringInit();
+    imuInit();
   }
   // set up webinterface
   webStart();
@@ -129,6 +131,8 @@ void statusWebWorker( void* z ) {
       udpHandlerWebUpdate();
       delay(150);
       inputsWheelAngleStatusUpdate();
+      delay(150);
+      imuStatusUpdate();
       delay(150);
     }
     vTaskDelay( 2 );
