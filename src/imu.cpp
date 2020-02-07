@@ -3,8 +3,8 @@
 #include "imu.hpp"
 #include "udpHandler.hpp"
 #include "webUi.hpp"
-#include <Madgwick.h>
-#include <Mahony.h>
+#include <MadgwickAHRS.h>
+#include <MahonyAHRS.h>
 #include <Quaternion.h>
 
 void (*imuReadData)(float*, float*, float*, float*, float*, float*, float*, float*, float*);
