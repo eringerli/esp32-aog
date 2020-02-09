@@ -36,12 +36,12 @@ void hwSetupNodeMcuNmea() {
   analogReadResolution(10);
 
   // serial
-  gpio_pad_select_gpio(GPIO_NUM_14);
-  gpio_set_direction(GPIO_NUM_14, GPIO_MODE_INPUT);
-  gpio_set_pull_mode(GPIO_NUM_14, GPIO_FLOATING);
-  gpio_pad_select_gpio(GPIO_NUM_13);
-  gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);
-  gpio_set_pull_mode(GPIO_NUM_13, GPIO_FLOATING);
+  gpio_pad_select_gpio(GPIO_NUM_16);
+  gpio_set_direction(GPIO_NUM_16, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(GPIO_NUM_16, GPIO_FLOATING);
+  gpio_pad_select_gpio(GPIO_NUM_17);
+  gpio_set_direction(GPIO_NUM_17, GPIO_MODE_OUTPUT);
+  gpio_set_pull_mode(GPIO_NUM_17, GPIO_FLOATING);
   gps1.begin(115200, SERIAL_8N1, 16, 17);
   rs232.begin(57600, SERIAL_8N1, 32, 14);
 

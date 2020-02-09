@@ -35,7 +35,7 @@ void webStart() {
   // Use SPIFFS if the ressources get a bit tough in the end, change readme in that case
   //ESPUI.beginSPIFFS("AgOpenGPS ESP32 controler");
   ESPUI.jsonUpdateDocumentSize = 2000;
-  ESPUI.jsonInitialDocumentSize = 20000;
+  ESPUI.jsonInitialDocumentSize = 32000;
   ESPUI.begin("AgOpenGPS ESP32 controler");
 }
 void webChangeNeedsReboot(){
