@@ -17,7 +17,7 @@ void hwSetupInitial() {
   // nothing in the webUi
 }
 
-void hwSetupNodeMcuCytronNmea() {
+void hwSetupNodeMcuNmea() {
   bool hwInitErrors = false;
 
   // for the status LED
@@ -25,7 +25,7 @@ void hwSetupNodeMcuCytronNmea() {
   status.statusPort = 2;
 
   // I2C
-  Wire.begin(32, 33, 400000 );
+  Wire.begin(23, 22, 400000 );
 
   // ADS1115
   if (ioAccess_ads1115_init(0x48) == false) {
@@ -34,10 +34,28 @@ void hwSetupNodeMcuCytronNmea() {
   }
   //internal ADC
   analogReadResolution(10);
+
+  // serial
+  gpio_pad_select_gpio(GPIO_NUM_14);
+  gpio_set_direction(GPIO_NUM_14, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(GPIO_NUM_14, GPIO_FLOATING);
+  gpio_pad_select_gpio(GPIO_NUM_13);
+  gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);
+  gpio_set_pull_mode(GPIO_NUM_13, GPIO_FLOATING);
+  gps1.begin(115200, SERIAL_8N1, 16, 17);
+  rs232.begin(57600, SERIAL_8N1, 32, 14);
+
+  // digital Outputs
+  ioAccessInitAsDigitalOutput(21);
+  ioAccessInitAsDigitalOutput(13);
+  ioAccessInitAsDigitalOutput(12);
+  ioAccessInitAsDigitalOutput(27);
+  ioAccessInitAsDigitalOutput(33);
+  ioAccessInitAsDigitalOutput(15);
+
   // analog inputs
-  ioAccessWebListAnalogIn = &hwSetupNodeMcuCytronWebAnalogIn;
-  ioAccessWebListDigitalOut = &hwSetupNodeMcuCytronWebDigitalOut;
-  ioAccessMotor1 = &hwSetupNodeMcuCytroMotor1;
+  ioAccessWebListAnalogIn = &hwSetupNodeMcuWebAnalogIn;
+  ioAccessWebListDigitalOut = &hwSetupNodeMcuWebDigitalOut;
 
   if (hwInitErrors) {
     status.hardwareStatus = Status::Hardware::error;
@@ -71,16 +89,87 @@ void hwSetupNodeMcuCytronNmea() {
   gpsNmeasingleReader();
 }
 
-void hwSetupNodeMcuCytronWebAnalogIn(int parent) {
-  // TODO
-}
-void hwSetupNodeMcuCytronWebDigitalOut(int parent){
-  // TODO
-}
-void hwSetupNodeMcuCytroMotor1(int pwm){
-  // TODO
+void hwSetupNodeMcuCytronNmea() {
+  hwSetupNodeMcuNmea();
+  // Motor pins:
+  // SCK 5
+  // MOSI 18
+  // MISO 19
+  ioAccessInitAsDigitalOutput(5);
+  ioAccessInitPwmChannel(0, 500);
+  ioAccessInitAttachToPwmChannel(18, 0);
+  ioAccessMotor1 = &hwSetupNodeMcuCytronMotor1;
 }
 
+void hwSetupNodeMcuIbt2Nmea() {
+  hwSetupNodeMcuNmea();
+  // Motor pins:
+  // SCK 5
+  // MOSI 18
+  // MISO 19
+  // motor
+  ioAccessInitAsDigitalOutput(5);
+  ioAccessInitPwmChannel(0, 500);
+  ioAccessInitAttachToPwmChannel(18, 0);
+  ioAccessInitPwmChannel(1, 500);
+  ioAccessInitAttachToPwmChannel(19, 1);
+
+  ioAccessMotor1 = &hwSetupNodeMcuIbt2Motor1;
+}
+
+
+void hwSetupNodeMcuWebAnalogIn(int parent) {
+  ESPUI.addControl( ControlType::Option, "ESP A2/34", "34", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP A3/39", "39", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP A4/36", "36", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP A13/35", "35", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A0 (Ref GND)", "41", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A0 (Ref A3)",  "46", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A0 (Ref A1)",  "45", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A1 (Ref GND)", "42", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A1 (Ref A3)",  "47", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A2 (Ref GND)", "43", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A2 (Ref A3)",  "48", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ADS A3 (Ref GND)", "44", ControlColor::Alizarin, parent );
+}
+
+void hwSetupNodeMcuWebDigitalOut(int parent){
+  ESPUI.addControl( ControlType::Option, "ESP 21", "21", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP 13", "13", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP 12", "12", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP 27", "27", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP 33", "33", ControlColor::Alizarin, parent );
+  ESPUI.addControl( ControlType::Option, "ESP 15", "15", ControlColor::Alizarin, parent );
+}
+
+void hwSetupNodeMcuCytronMotor1(int pwm){
+  bool direction = pwm > 1;
+  pwm = abs(pwm);
+
+  ioAccessSetDigitalOutput(5, direction);
+  ioAccessSetPwmUtil(0, pwm); // set duty cycle
+}
+
+void hwSetupNodeMcuIbt2Motor1(int pwm){
+  bool direction = pwm > 1;
+  pwm = abs(pwm);
+
+  if (pwm == 0) { // zero => both off
+    ioAccessSetDigitalOutput(5, false);
+    ioAccessSetPwmUtil(0, pwm); // set duty cycle
+    ioAccessSetPwmUtil(1, pwm); // set duty cycle
+  } else {
+    if (direction) {
+      ioAccessSetDigitalOutput(5, true);
+      ioAccessSetPwmUtil(0, pwm); // set duty cycle
+      ioAccessSetPwmUtil(1, 0); // set duty cycle
+    } else {
+      ioAccessSetDigitalOutput(5, true);
+      ioAccessSetPwmUtil(0, 0); // set duty cycle
+      ioAccessSetPwmUtil(1, pwm); // set duty cycle
+    }
+  }
+}
 
 
 void hwSetupF9PIoBoardNmea() {
@@ -227,7 +316,6 @@ void hwSetupF9PIoBoardMotor1(int pwm) {
     }
   }
   ioAccessSetPwmUtil(0, pwm); // set duty cycle
-
 }
 
 
@@ -245,6 +333,7 @@ void hwSetupWebSetup() {
     ESPUI.addControl( ControlType::Option, hwSetupHardwareIdToName(0), "0", ControlColor::Alizarin, sel );
     ESPUI.addControl( ControlType::Option, hwSetupHardwareIdToName(1), "1", ControlColor::Alizarin, sel );
     ESPUI.addControl( ControlType::Option, hwSetupHardwareIdToName(2), "2", ControlColor::Alizarin, sel );
+    ESPUI.addControl( ControlType::Option, hwSetupHardwareIdToName(3), "2", ControlColor::Alizarin, sel );
   } else {
     uint16_t sel = ESPUI.addControl( ControlType::Select, "Hardware", String(hw), ControlColor::Wetasphalt, webTabHardware,
       []( Control * control, int id ) {} );
@@ -272,6 +361,9 @@ char* hwSetupHardwareIdToName(uint8_t setup) {
       break;
     case 2:
       return (char*)"F9P-IO-Board Nmea";
+      break;
+    case 3:
+      return (char*)"NodeMCU IBT2 Nmea";
       break;
     default:
       return (char*)"Initial Setup";

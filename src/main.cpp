@@ -88,6 +88,9 @@ void setup() {
     case 2:
       hwSetupF9PIoBoardNmea();
       break;
+    case 3:
+      hwSetupNodeMcuIbt2Nmea();
+      break;
     default:
       hwSetupInitial();
       break;
