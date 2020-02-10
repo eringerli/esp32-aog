@@ -6,6 +6,7 @@
 #include <MadgwickAHRS.h>
 #include <MahonyAHRS.h>
 #include <Quaternion.h>
+#include "imuHardware.hpp"
 
 void (*imuReadData)(float*, float*, float*, float*, float*, float*, float*, float*, float*);
 int imuWebStatus;
@@ -13,6 +14,43 @@ ImuSettings imuSettings;
 
 void imuInit() {
   imuWebStatus = ESPUI.addControl( ControlType::Label, "Status:", "No imu active", ControlColor::Turquoise, webTabIMU );
+
+  // init the requested Imu
+  uint8_t imuSelection = preferences.getUChar("imuChip", 0);
+  uint16_t sel = ESPUI.addControl( ControlType::Select, "IMU", (String)imuSelection, ControlColor::Wetasphalt, webTabIMU,
+    []( Control * control, int id ) {
+      preferences.putUChar("imuChip", control->value.toInt());
+      control->color = ControlColor::Carrot;
+      ESPUI.updateControl( control );
+      webChangeNeedsReboot();
+    } );
+  ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+  ESPUI.addControl( ControlType::Option, "LSM9DS1", "1", ControlColor::Alizarin, sel );
+  ESPUI.addControl( ControlType::Option, "FXAS2100/FXOS8700", "2", ControlColor::Alizarin, sel );
+  ESPUI.addControl( ControlType::Option, "MMA8451", "3", ControlColor::Alizarin, sel );
+
+  // activate Imu
+  switch (imuSelection) {
+    case 1:
+      if (!imuHardwareLSM9DS1Init()) {
+        status.hardwareStatus = Status::Hardware::error;
+      }
+      break;
+    // case 2:
+    //   imuHardwareFXAS2100FXOS8700Init();
+    //   break;
+    // case 3:
+    //   imuHardwareMMA8451Init();
+      break;
+    default:
+      break;
+  }
+
+  // imu
+  //if (!imuHardwareLSM9DS1Init()) {
+  //  hwInitErrors = false;
+  //}
+
   if (imuReadData) {  // some IMU is configured
     imuSettings.mountingRoll = preferences.getFloat("imuRoll", imuSettings.mountingRoll);
     ESPUI.addControl( ControlType::Number, "Mounting correction Roll", (String)imuSettings.mountingRoll, ControlColor::Wetasphalt, webTabIMU,
@@ -163,10 +201,38 @@ void imuTask(void *z) {
     mahony.begin(50);
   }
 
+  // debug
+  bool debugImu = true;
+  int debugCounter = 0;
+
   // loop
   while (true) {
     // get new data
     imuReadData(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+
+    // debug raw
+    if (debugImu && (debugCounter++ % 20) == 0) {
+      usb.print("IMU raw data. ax: ");
+      usb.print(ax);
+      usb.print("  ay: ");
+      usb.print(ay);
+      usb.print("  az: ");
+      usb.print(az);
+      usb.print("  gx: ");
+      usb.print(gx);
+      usb.print("  gy: ");
+      usb.print(gy);
+      usb.print("  gz: ");
+      usb.print(gz);
+      usb.print("  mx: ");
+      usb.print(mx);
+      usb.print("  my: ");
+      usb.print(my);
+      usb.print("  mz: ");
+      usb.print(mz);
+      usb.println();
+    }
+
 
     // calibration if requested
     //
@@ -231,6 +297,29 @@ void imuTask(void *z) {
     gx -= imuSettings.calibrationData.gyro_zero_offsets[0];
     gy -= imuSettings.calibrationData.gyro_zero_offsets[1];
     gz -= imuSettings.calibrationData.gyro_zero_offsets[2];
+
+    // debug output of unprocessed Values
+    if (debugImu && (debugCounter % 20) == 0) {
+      usb.print("IMU data after correction. ax: ");
+      usb.print(ax);
+      usb.print("  ay: ");
+      usb.print(ay);
+      usb.print("  az: ");
+      usb.print(az);
+      usb.print("  gx: ");
+      usb.print(gx);
+      usb.print("  gy: ");
+      usb.print(gy);
+      usb.print("  gz: ");
+      usb.print(gz);
+      usb.print("  mx: ");
+      usb.print(mx);
+      usb.print("  my: ");
+      usb.print(my);
+      usb.print("  mz: ");
+      usb.print(mz);
+      usb.println();
+    }
 
     // calculate mounting correction
     Quaternion correction = Quaternion::from_euler_rotation( radians( imuSettings.mountingRoll ),
