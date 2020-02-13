@@ -23,6 +23,7 @@ bool imuHardwareLSM9DS1Init() {
   uint lsm9ds1Init = 0;
   if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
     lsm9ds1Init = imuHardwareLsm9Ds1.begin(0x6A, 0x1C);
+    imuHardwareLsm9Ds1.setMagScale(4);
     usb.print("DEBUG: return code von LSM9DS1 begin(): ");
     usb.println(lsm9ds1Init);
     xSemaphoreGive( i2cMutex );
@@ -52,11 +53,11 @@ void imuHardwareLSM9DS1Aquire(float* ax, float* ay, float* az, float* gx, float*
   *gy = imuHardwareLsm9Ds1.calcGyro(imuHardwareLsm9Ds1.gy);
   *gz = imuHardwareLsm9Ds1.calcGyro(imuHardwareLsm9Ds1.gz);
 
-  imuHardwareLsm9Ds1.calcAccel(imuHardwareLsm9Ds1.ax);
-  imuHardwareLsm9Ds1.calcAccel(imuHardwareLsm9Ds1.ay);
-  imuHardwareLsm9Ds1.calcAccel(imuHardwareLsm9Ds1.az);
+  *ax = imuHardwareLsm9Ds1.calcAccel(imuHardwareLsm9Ds1.ax);
+  *ay = imuHardwareLsm9Ds1.calcAccel(imuHardwareLsm9Ds1.ay);
+  *az = imuHardwareLsm9Ds1.calcAccel(imuHardwareLsm9Ds1.az);
 
-  imuHardwareLsm9Ds1.calcMag(imuHardwareLsm9Ds1.mx);
-  imuHardwareLsm9Ds1.calcMag(imuHardwareLsm9Ds1.my);
-  imuHardwareLsm9Ds1.calcMag(imuHardwareLsm9Ds1.mz);
+  *mx = -1 * imuHardwareLsm9Ds1.calcMag(imuHardwareLsm9Ds1.mx); // direction flipped compared to accel and gyro
+  *my = -imuHardwareLsm9Ds1.calcMag(imuHardwareLsm9Ds1.my);
+  *mz = -imuHardwareLsm9Ds1.calcMag(imuHardwareLsm9Ds1.mz);
 }
