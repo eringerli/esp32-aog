@@ -101,8 +101,12 @@ void hwSetupWifiMonitor( void* z ) {
   int counter = 0;
   while (counter < 25) {
     if (WiFi.status() == WL_CONNECTED) {
-      status.networkStatus = Status::Network::connected;
       hwSetupOwnAdress = WiFi.localIP();
+      if (status.networkStatus != Status::Network::connected ) {
+        status.networkStatus = Status::Network::connected;
+        usb.print("IP: ");
+        usb.println(hwSetupOwnAdress);
+      }
       counter = 0;
     } else {
       counter++;
