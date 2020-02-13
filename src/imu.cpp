@@ -202,7 +202,7 @@ void imuTask(void *z) {
   }
 
   // debug
-  bool debugImu = true;
+  bool debugImu = false;
   int debugCounter = 0;
 
   // loop
