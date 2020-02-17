@@ -202,37 +202,13 @@ void imuTask(void *z) {
   }
 
   // debug
-  bool debugImu = false;
+  bool debugImu = true;
   int debugCounter = 0;
 
   // loop
   while (true) {
     // get new data
     imuReadData(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
-
-    // debug raw
-    if (debugImu && (debugCounter++ % 20) == 0) {
-      usb.print("IMU raw data. ax: ");
-      usb.print(ax);
-      usb.print("  ay: ");
-      usb.print(ay);
-      usb.print("  az: ");
-      usb.print(az);
-      usb.print("  gx: ");
-      usb.print(gx);
-      usb.print("  gy: ");
-      usb.print(gy);
-      usb.print("  gz: ");
-      usb.print(gz);
-      usb.print("  mx: ");
-      usb.print(mx);
-      usb.print("  my: ");
-      usb.print(my);
-      usb.print("  mz: ");
-      usb.print(mz);
-      usb.println();
-    }
-
 
     // calibration if requested
     //
@@ -299,7 +275,7 @@ void imuTask(void *z) {
     gz -= imuSettings.calibrationData.gyro_zero_offsets[2];
 
     // debug output of unprocessed Values
-    if (debugImu && (debugCounter % 20) == 0) {
+    if (debugImu && (debugCounter++ % 50) == 0) {
       usb.print("IMU data after correction. ax: ");
       usb.print(ax);
       usb.print("  ay: ");
@@ -329,12 +305,15 @@ void imuTask(void *z) {
 
     // calculate roll
     if (imuSettings.hasAccel) {
-      Quaternion orientation = Quaternion(ax, ay, az);
-      orientation.normalize();
-      orientation = orientation.rotate(correction);
+      Quaternion orientation = Quaternion::from_euler_rotation(ax * 1.60285339469, ay * 1.60285339469, az * 1.60285339469); // 1.60285339469 = pi/2/0,98 (g)
+      orientation = orientation * correction;
       double roll, placeholder;
-      orientation.to_euler_rotation(&placeholder, &placeholder, &roll);
+      orientation.to_euler_rotation(&placeholder, &roll, &placeholder);
       roll *= 57.2957795131; //180/pi
+      if (debugImu && (debugCounter % 50) == 0) {
+        usb.print("Roll: ");
+        usb.println(roll);
+      }
       imuSettings.roll = rollFilter.step((float)roll);
       if (imuSettings.sendRoll) {
         udpActualData.roll = imuSettings.roll;
@@ -358,11 +337,11 @@ void imuTask(void *z) {
                       mahony.getPitchRadians(),
                       mahony.getYawRadians());
       }
-      imuHeading = imuHeading.rotate(correction);
+      imuHeading = imuHeading * correction;
       double heading, placeholder;
       imuHeading.to_euler_rotation(&heading, &placeholder, &placeholder);
       heading *= 57.2957795131; //180/pi
-      heading = fmod(heading, 360);
+      heading = fmod(heading + 360, 360);
       imuSettings.heading = headingFilter.step((float)heading);
       if (imuSettings.sendHeading) {
         udpActualData.heading = imuSettings.heading;
