@@ -57,7 +57,7 @@ class Average {
       *writePointer++ = c;
 
       // Überlauf
-      if ( writePointer >= &( Buffer[Size] ) ) {
+      if( writePointer >= &( Buffer[Size] ) ) {
         writePointer = Buffer;
       }
     }
@@ -65,7 +65,7 @@ class Average {
     operator T() {
       Tcalc avg = 0;
 
-      for ( T* ptr = Buffer; ptr <= &( Buffer[Size - 1] ); ptr++ ) {
+      for( T* ptr = Buffer; ptr <= &( Buffer[Size - 1] ); ptr++ ) {
         avg += *ptr;
       }
 

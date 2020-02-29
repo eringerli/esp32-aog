@@ -84,7 +84,7 @@ void nmeaWorker( void* z ) {
   sentence.reserve( NmeaBufferSize );
   lastGN.reserve( NmeaBufferSize );
 
-  if ( steerConfig.sendNmeaDataTcpPort != 0 ) {
+  if( steerConfig.sendNmeaDataTcpPort != 0 ) {
     server = new AsyncServer( steerConfig.sendNmeaDataTcpPort ); // start listening on tcp port 7050
     server->onClient( &handleNewClient, server );
     server->begin();
@@ -93,35 +93,35 @@ void nmeaWorker( void* z ) {
   constexpr TickType_t xFrequency = 50;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  for ( ;; ) {
+  for( ;; ) {
     uint16_t cnt = Serial2.available();
 
-    if ( cnt > sizeof( receiveBuffer ) ) {
+    if( cnt > sizeof( receiveBuffer ) ) {
       cnt = sizeof( receiveBuffer );
     }
 
-    for ( uint16_t i = 0; i < cnt; i++ ) {
+    for( uint16_t i = 0; i < cnt; i++ ) {
       receiveBuffer[i] = Serial2.read();
     }
 
     // send sentence to all connected clients on the TCP-Socket
-    for ( auto client = clients.begin() ; client != clients.end(); ++client ) {
+    for( auto client = clients.begin() ; client != clients.end(); ++client ) {
       // reply to client
-      if ( ( *client )->space() > cnt && ( *client )->canSend() ) {
+      if( ( *client )->space() > cnt && ( *client )->canSend() ) {
         ( *client )->write( receiveBuffer, cnt );
         ( *client )->send();
       }
     }
 
-    for ( uint16_t i = 0; i < cnt; i++ ) {
+    for( uint16_t i = 0; i < cnt; i++ ) {
       char c = receiveBuffer[i];
 
-      if ( nmea.process( c ) ) {
-        if ( strcmp( nmea.getMessageID(), "GGA" ) == 0 ) {
+      if( nmea.process( c ) ) {
+        if( strcmp( nmea.getMessageID(), "GGA" ) == 0 ) {
           lastGN = nmea.getSentence();
         }
 
-        if ( steerConfig.sendNmeaDataTo != SteerConfig::SendNmeaDataTo::None ) {
+        if( steerConfig.sendNmeaDataTo != SteerConfig::SendNmeaDataTo::None ) {
 
           sentence = nmea.getSentence();
 
@@ -148,7 +148,7 @@ void nmeaWorker( void* z ) {
 //           sentence += checksum;
           sentence += "\r\n";
 
-          switch ( steerConfig.sendNmeaDataTo ) {
+          switch( steerConfig.sendNmeaDataTo ) {
             case SteerConfig::SendNmeaDataTo::UDP: {
               udpSendFrom.broadcastTo( ( uint8_t* )sentence.c_str(), ( uint16_t )sentence.length(), initialisation.portSendTo );
             }
@@ -185,7 +185,7 @@ void nmeaWorker( void* z ) {
     {
       static uint8_t loopCounter = 0;
 
-      if ( loopCounter++ >= ( 1000 / xFrequency ) ) {
+      if( loopCounter++ >= ( 1000 / xFrequency ) ) {
         loopCounter = 0;
         Control* handle = ESPUI.getControl( labelStatusGps );
 
@@ -204,7 +204,7 @@ void nmeaWorker( void* z ) {
         str += ( float )nmea.getAgeOfDGPS() / 10;
         str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Quality:</td><td style='text-align:left; padding: 0px 5px;'>";
 
-        switch ( nmea.getQuality() ) {
+        switch( nmea.getQuality() ) {
           case 0:
             str += "No GPS Fix</td></tr></table>";
             break;
@@ -235,7 +235,7 @@ void nmeaWorker( void* z ) {
         }
 
         handle->value = str;
-        ESPUI.updateControl( handle );
+        ESPUI.updateControlAsync( handle );
       }
     }
 
@@ -251,10 +251,10 @@ void ntripWorker( void* z ) {
   initialisation.rtkCorrectionURL.reserve( 200 );
   initialisation.rtkCorrectionURL = "http://";
 
-  if ( steerConfig.rtkCorrectionUsername != '\0' ) {
+  if( steerConfig.rtkCorrectionUsername != '\0' ) {
     initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionUsername;
 
-    if ( steerConfig.rtkCorrectionPassword != '\0' ) {
+    if( steerConfig.rtkCorrectionPassword != '\0' ) {
       initialisation.rtkCorrectionURL += ":";
       initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionPassword;
     }
@@ -264,23 +264,23 @@ void ntripWorker( void* z ) {
 
   initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionServer;
 
-  if ( steerConfig.rtkCorrectionPort != '\0' ) {
+  if( steerConfig.rtkCorrectionPort != '\0' ) {
     initialisation.rtkCorrectionURL += ":";
     initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionPort;
   }
 
   initialisation.rtkCorrectionURL += "/";
 
-  if ( steerConfig.rtkCorrectionMountpoint != '\0' ) {
+  if( steerConfig.rtkCorrectionMountpoint != '\0' ) {
     initialisation.rtkCorrectionURL += steerConfig.rtkCorrectionMountpoint;
   }
 
-  if ( initialisation.rtkCorrectionURL.length() <= 8 ) {
+  if( initialisation.rtkCorrectionURL.length() <= 8 ) {
     // update WebUI
     {
       labelNtripHandle->value = "Cannot connect to " + initialisation.rtkCorrectionURL;
       labelNtripHandle->color = ControlColor::Carrot;
-      ESPUI.updateControl( labelNtripHandle );
+      ESPUI.updateControlAsync( labelNtripHandle );
     }
 
     // delete this task
@@ -290,22 +290,22 @@ void ntripWorker( void* z ) {
     return;
   }
 
-  for ( ;; ) {
+  for( ;; ) {
     HTTPClient http;
     http.begin( initialisation.rtkCorrectionURL );
     http.setUserAgent( "NTRIP CoffeetracNTRIPClient" );
     int httpCode = http.GET();
 
-    if ( httpCode > 0 ) {
+    if( httpCode > 0 ) {
       // HTTP header has been send and Server response header has been handled
 
       // file found at server
-      if ( httpCode == HTTP_CODE_OK ) {
+      if( httpCode == HTTP_CODE_OK ) {
         // update WebUI
         {
           labelNtripHandle->value = "Connected to " + initialisation.rtkCorrectionURL;
           labelNtripHandle->color = ControlColor::Emerald;
-          ESPUI.updateControl( labelNtripHandle );
+          ESPUI.updateControlAsync( labelNtripHandle );
         }
 
         // create buffer for read
@@ -318,36 +318,36 @@ void ntripWorker( void* z ) {
         time_t timeoutSendGGA = millis() + ( steerConfig.ntripPositionSendIntervall * 1000 );
 
         // read all data from server
-        while ( http.connected() ) {
+        while( http.connected() ) {
           // get available data size
           size_t size = stream->available();
 
-          if ( size ) {
+          if( size ) {
             int c = stream->readBytes( buff, ( ( size > buffSize ) ? buffSize : size ) );
 
             // write it to Serial
             Serial2.write( buff, c );
           }
 
-          if ( millis() > timeoutSendGGA ) {
+          if( millis() > timeoutSendGGA ) {
             String nmeaToSend;
             nmeaToSend.reserve( sizeof( SteerConfig::rtkCorrectionNmeaToSend ) );
 
-            if ( steerConfig.rtkCorrectionNmeaToSend[0] != '\0' ) {
+            if( steerConfig.rtkCorrectionNmeaToSend[0] != '\0' ) {
               nmeaToSend = steerConfig.rtkCorrectionNmeaToSend;
             } else {
               nmeaToSend = lastGN;
             }
 
-            if ( nmeaToSend.length() ) {
+            if( nmeaToSend.length() ) {
               // calculate checksum if not correct
-              if ( !nmea.testChecksum( nmeaToSend.c_str() ) ) {
+              if( !nmea.testChecksum( nmeaToSend.c_str() ) ) {
 
                 // snap off the checksum, if it exists
                 {
                   uint8_t occurence = nmeaToSend.lastIndexOf( "*" );
 
-                  if ( occurence > 0 ) {
+                  if( occurence > 0 ) {
                     nmeaToSend.remove( occurence );
                   }
                 }
@@ -358,19 +358,19 @@ void ntripWorker( void* z ) {
                 nmeaToSend += checksum;
 
                 // update checksum, also in the WebUI
-                if ( steerConfig.rtkCorrectionNmeaToSend[0] != '\0' ) {
+                if( steerConfig.rtkCorrectionNmeaToSend[0] != '\0' ) {
                   nmeaToSend.toCharArray( steerConfig.rtkCorrectionNmeaToSend, sizeof( steerConfig.rtkCorrectionNmeaToSend ) );
 
                   {
                     Control* handle = ESPUI.getControl( textNmeaToSend );
                     handle->value.reserve( 80 );
                     handle->value = steerConfig.rtkCorrectionNmeaToSend;
-                    ESPUI.updateControl( handle );
+                    ESPUI.updateControlAsync( handle );
                   }
                 }
               }
 
-              if ( nmeaToSend.lastIndexOf( '\n' ) == -1 ) {
+              if( nmeaToSend.lastIndexOf( '\n' ) == -1 ) {
                 nmeaToSend += "\r\n";
               }
 
@@ -390,7 +390,7 @@ void ntripWorker( void* z ) {
     {
       labelNtripHandle->value = "Cannot connect to " + initialisation.rtkCorrectionURL;
       labelNtripHandle->color = ControlColor::Carrot;
-      ESPUI.updateControl( labelNtripHandle );
+      ESPUI.updateControlAsync( labelNtripHandle );
     }
 
     http.end();
@@ -406,7 +406,7 @@ void ntripWorker( void* z ) {
 void initRtkCorrection() {
   Serial2.begin( steerConfig.rtkCorrectionBaudrate );
 
-  if ( steerConfig.rtkCorrectionType == SteerConfig::RtkCorrectionType::Ntrip ) {
+  if( steerConfig.rtkCorrectionType == SteerConfig::RtkCorrectionType::Ntrip ) {
     xTaskCreate( ntripWorker, "ntripWorker", 4096, NULL, 8, NULL );
   }
 

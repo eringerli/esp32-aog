@@ -92,8 +92,8 @@ class  FilterBuLp2_fxos8700Acc {
              + ( -0.41280159809618854894 * v[0] )
              + ( 1.14298050253990091107 * v[1] );
       return
-        ( v[0] + v[2] )
-        + 2 * v[1];
+              ( v[0] + v[2] )
+              + 2 * v[1];
     }
 } fxos8700accFilterX, fxos8700accFilterY, fxos8700accFilterZ;
 
@@ -115,8 +115,8 @@ class  FilterBuLp2_fxos8700Mag {
              + ( -0.41280159809618854894 * v[0] )
              + ( 1.14298050253990091107 * v[1] );
       return
-        ( v[0] + v[2] )
-        + 2 * v[1];
+              ( v[0] + v[2] )
+              + 2 * v[1];
     }
 } fxos8700magFilterX, fxos8700magFilterY, fxos8700magFilterZ;
 
@@ -135,7 +135,7 @@ class  FilterBuHp2_fxas2100Gyr {
       v[1] = ( 9.695312529087461995e-1 * x )
              + ( 0.93906250581749239892 * v[0] );
       return
-        ( v[1] - v[0] );
+              ( v[1] - v[0] );
     }
 } fxas2100gyrFilterX, fxas2100gyrFilterY, fxas2100gyrFilterZ;
 
@@ -157,8 +157,8 @@ class  FilterBuLp2_mma8481acc {
              + ( -0.64135153805756306422 * v[0] )
              + ( 1.56101807580071816339 * v[1] );
       return
-        ( v[0] + v[2] )
-        + 2 * v[1];
+              ( v[0] + v[2] )
+              + 2 * v[1];
     }
 } mma8481accFilterX, mma8481accFilterY, mma8481accFilterZ;
 
@@ -180,8 +180,8 @@ class  FilterBuLp2_2 {
              + ( -0.95654367651120375537 * v[0] )
              + ( 1.95557824031503590945 * v[1] );
       return
-        ( v[0] + v[2] )
-        + 2 * v[1];
+              ( v[0] + v[2] )
+              + 2 * v[1];
     }
 } filterRoll, filterPitch, filterHeading;
 
@@ -203,8 +203,8 @@ class  FilterBuLp2_3 {
              + ( -0.64135153805756306422 * v[0] )
              + ( 1.56101807580071816339 * v[1] );
       return
-        ( v[0] + v[2] )
-        + 2 * v[1];
+              ( v[0] + v[2] )
+              + 2 * v[1];
     }
 } wheelAngleSensorFilter;
 
@@ -266,13 +266,13 @@ void sensorWorker1HzPoller( void* z ) {
   constexpr TickType_t xFrequency = 1000;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  for ( ;; ) {
-    if ( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
+  for( ;; ) {
+    if( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
 
       // Display calibration status for each sensor.
       uint8_t system, gyro, accel, mag = 0;
 
-      if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+      if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
         bno.getCalibration( &system, &gyro, &accel, &mag );
         xSemaphoreGive( i2cMutex );
       }
@@ -289,15 +289,15 @@ void sensorWorker1HzPoller( void* z ) {
       {
         Control* handle = ESPUI.getControl( labelStatusImu );
 
-        if ( system == 3 && gyro == 3 && accel == 3 && mag == 3 ) {
+        if( system == 3 && gyro == 3 && accel == 3 && mag == 3 ) {
           handle->value = "BNO055 found & calibrated";
           handle->color = ControlColor::Emerald;
 
           // save to eeprom every 250s
-          if ( loopCounter++ > 250 ) {
+          if( loopCounter++ > 250 ) {
             loopCounter = 0;
 
-            if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+            if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
               bno.getSensorOffsets( bno055CalibrationData );
               xSemaphoreGive( i2cMutex );
             }
@@ -323,7 +323,7 @@ void sensorWorker1HzPoller( void* z ) {
           handle->color = ControlColor::Carrot;
         }
 
-        ESPUI.updateControl( handle );
+        ESPUI.updateControlAsync( handle );
       }
 
 //       Serial.print( "Bno calibration Millis: " );
@@ -341,12 +341,12 @@ void sensorWorker100HzPoller( void* z ) {
   constexpr TickType_t xFrequency = 10;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  for ( ;; ) {
-    if ( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
+  for( ;; ) {
+    if( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
       imu::Quaternion orientation;
       imu::Vector<3> euler;
 
-      if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+      if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
         orientation = bno.getQuat();
         xSemaphoreGive( i2cMutex );
 
@@ -366,19 +366,19 @@ void sensorWorker100HzPoller( void* z ) {
       }
     }
 
-    if ( initialisation.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
-         initialisation.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
+    if( initialisation.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
+        initialisation.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
 
       sensors_event_t gyro_event, accel_event, mag_event;
 
       // Get new data samples
-      if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+      if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
         fxas2100.getEvent( &gyro_event );
         fxos8700.getEvent( &accel_event, &mag_event );
         xSemaphoreGive( i2cMutex );
       }
 
-      if ( steerImuInclinometerData.sendCalibrationDataFromImu ) {
+      if( steerImuInclinometerData.sendCalibrationDataFromImu ) {
         // Print the sensor data
         Serial.print( "Raw:" );
         Serial.print( fxos8700.accel_raw.x );
@@ -400,7 +400,7 @@ void sensorWorker100HzPoller( void* z ) {
         Serial.print( fxos8700.mag_raw.z );
         Serial.println();
 
-        if ( Serial.available() >= 68 ) {
+        if( Serial.available() >= 68 ) {
           static uint8_t data[68];
           Serial.readBytes( data, sizeof( data ) );
           static float dataFloat[16];
@@ -467,17 +467,17 @@ void sensorWorker100HzPoller( void* z ) {
 
       // input into AHRS
       ahrs.update(
-        gx,
-        gy,
-        gz,
+              gx,
+              gy,
+              gz,
 
-        accel_event.acceleration.x,
-        accel_event.acceleration.y,
-        accel_event.acceleration.z,
+              accel_event.acceleration.x,
+              accel_event.acceleration.y,
+              accel_event.acceleration.z,
 
-        mmx,
-        mmy,
-        mmz
+              mmx,
+              mmy,
+              mmz
       );
 
       float w, x, y, z;
@@ -504,7 +504,7 @@ void sensorWorker100HzPoller( void* z ) {
 
         float heading = euler[0] + 180 + 90;
 
-        while ( heading > 360 ) {
+        while( heading > 360 ) {
           heading -= 360;
         }
 
@@ -529,34 +529,34 @@ void sensorWorker100HzPoller( void* z ) {
     }
 
 
-    if ( steerConfig.wheelAngleInput != SteerConfig::AnalogIn::None ) {
+    if( steerConfig.wheelAngleInput != SteerConfig::AnalogIn::None ) {
       float wheelAngleTmp = 0;
 
-      switch ( ( uint8_t )steerConfig.wheelAngleInput ) {
-        case ( uint8_t )SteerConfig::AnalogIn::Esp32GpioA2 ...( uint8_t )SteerConfig::AnalogIn::Esp32GpioA12: {
+      switch( ( uint8_t )steerConfig.wheelAngleInput ) {
+        case( uint8_t )SteerConfig::AnalogIn::Esp32GpioA2 ...( uint8_t )SteerConfig::AnalogIn::Esp32GpioA12: {
           wheelAngleTmp = analogRead( ( uint8_t )steerConfig.wheelAngleInput );
         }
         break;
 
-        case ( uint8_t )SteerConfig::AnalogIn::ADS1115A0Single ...( uint8_t )SteerConfig::AnalogIn::ADS1115A3Single: {
-          if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+        case( uint8_t )SteerConfig::AnalogIn::ADS1115A0Single ...( uint8_t )SteerConfig::AnalogIn::ADS1115A3Single: {
+          if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
             wheelAngleTmp = ads.readADC_SingleEnded(
-                              ( uint8_t )steerConfig.wheelAngleInput - ( uint8_t )SteerConfig::AnalogIn::ADS1115A0Single );
+                                    ( uint8_t )steerConfig.wheelAngleInput - ( uint8_t )SteerConfig::AnalogIn::ADS1115A0Single );
             xSemaphoreGive( i2cMutex );
           }
         }
         break;
 
-        case ( uint8_t )SteerConfig::AnalogIn::ADS1115A0A1Differential: {
-          if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+        case( uint8_t )SteerConfig::AnalogIn::ADS1115A0A1Differential: {
+          if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
             wheelAngleTmp = ads.readADC_Differential_0_1();
             xSemaphoreGive( i2cMutex );
           }
         }
         break;
 
-        case ( uint8_t )SteerConfig::AnalogIn::ADS1115A2A3Differential: {
-          if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+        case( uint8_t )SteerConfig::AnalogIn::ADS1115A2A3Differential: {
+          if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
             wheelAngleTmp = ads.readADC_Differential_2_3();
             xSemaphoreGive( i2cMutex );
           }
@@ -568,7 +568,7 @@ void sensorWorker100HzPoller( void* z ) {
       }
 
       {
-        if ( steerConfig.allowWheelAngleCenterAndCountsOverwrite ) {
+        if( steerConfig.allowWheelAngleCenterAndCountsOverwrite ) {
           wheelAngleTmp -= steerSettings.wheelAnglePositionZero;
           wheelAngleTmp /= steerSettings.wheelAngleCountsPerDegree;
         } else {
@@ -578,9 +578,9 @@ void sensorWorker100HzPoller( void* z ) {
 
         steerSetpoints.wheelAngleRaw = wheelAngleTmp;
 
-        if ( steerConfig.wheelAngleSensorType == SteerConfig::WheelAngleSensorType::TieRodDisplacement ) {
-          if ( steerConfig.wheelAngleFirstArmLenght != 0 && steerConfig.wheelAngleSecondArmLenght != 0 &&
-               steerConfig.wheelAngleTrackArmLenght != 0 && steerConfig.wheelAngleTieRodStroke != 0 ) {
+        if( steerConfig.wheelAngleSensorType == SteerConfig::WheelAngleSensorType::TieRodDisplacement ) {
+          if( steerConfig.wheelAngleFirstArmLenght != 0 && steerConfig.wheelAngleSecondArmLenght != 0 &&
+              steerConfig.wheelAngleTrackArmLenght != 0 && steerConfig.wheelAngleTieRodStroke != 0 ) {
 
             auto getDisplacementFromAngle = []( float angle ) {
               // a: 2. arm, b: 1. arm, c: abstand drehpunkt wineklsensor und anschlagpunt 2. arm an der spurstange
@@ -597,16 +597,16 @@ void sensorWorker100HzPoller( void* z ) {
             steerSetpoints.wheelAngleCurrentDisplacement = getDisplacementFromAngle( wheelAngleTmp );
 
             double relativeDisplacementToStraightAhead =
-              // real displacement
-              steerSetpoints.wheelAngleCurrentDisplacement -
-              // calculate middle of displacement -
-              ( getDisplacementFromAngle( steerConfig.wheelAngleMinimumAngle ) + ( steerConfig.wheelAngleTieRodStroke / 2 ) );
+                    // real displacement
+                    steerSetpoints.wheelAngleCurrentDisplacement -
+                    // calculate middle of displacement -
+                    ( getDisplacementFromAngle( steerConfig.wheelAngleMinimumAngle ) + ( steerConfig.wheelAngleTieRodStroke / 2 ) );
 
             wheelAngleTmp = degrees( asin( relativeDisplacementToStraightAhead / steerConfig.wheelAngleTrackArmLenght ) );
           }
         }
 
-        if ( steerConfig.invertWheelAngleSensor ) {
+        if( steerConfig.invertWheelAngleSensor ) {
           wheelAngleTmp *= ( float ) -1;
         }
 
@@ -622,7 +622,7 @@ void sensorWorker100HzPoller( void* z ) {
     {
       static uint8_t loopCounter = 0;
 
-      if ( loopCounter++ > 99 ) {
+      if( loopCounter++ > 99 ) {
         loopCounter = 0;
         {
           Control* handle = ESPUI.getControl( labelOrientation );
@@ -633,14 +633,14 @@ void sensorWorker100HzPoller( void* z ) {
           handle->value += "°, Heading: ";
           handle->value += ( float )steerImuInclinometerData.heading;
 
-          ESPUI.updateControl( handle );
+          ESPUI.updateControlAsync( handle );
         }
         {
           Control* handle = ESPUI.getControl( labelWheelAngle );
           String str;
           str.reserve( 30 );
 
-          if ( steerConfig.wheelAngleSensorType == SteerConfig::WheelAngleSensorType::TieRodDisplacement ) {
+          if( steerConfig.wheelAngleSensorType == SteerConfig::WheelAngleSensorType::TieRodDisplacement ) {
             str += ( float )steerSetpoints.actualSteerAngle;
             str += "°, Raw ";
             str += ( float )steerSetpoints.wheelAngleRaw;
@@ -655,7 +655,7 @@ void sensorWorker100HzPoller( void* z ) {
           }
 
           handle->value = str;
-          ESPUI.updateControl( handle );
+          ESPUI.updateControlAsync( handle );
         }
       }
     }
@@ -669,18 +669,18 @@ void sensorWorker10HzPoller( void* z ) {
   constexpr TickType_t xFrequency = 100;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  for ( ;; ) {
-    if ( initialisation.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
+  for( ;; ) {
+    if( initialisation.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
       sensors_event_t events[32];
 
       uint8_t numSamples = 0;
 
-      if ( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
+      if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
         numSamples = mma.getEventsFromFifo( events );
         xSemaphoreGive( i2cMutex );
       }
 
-      for ( uint8_t i = 0; i < numSamples; i++ ) {
+      for( uint8_t i = 0; i < numSamples; i++ ) {
         float x = mma8481accFilterX.step( events[i].acceleration.x );
         float y = mma8481accFilterY.step( events[i].acceleration.y );
         float z = mma8481accFilterZ.step( events[i].acceleration.z );
@@ -727,10 +727,10 @@ void sensorWorker10HzPoller( void* z ) {
 void initSensors() {
   calculateMountingCorrection();
 
-  if ( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
+  if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
     Control* handle = ESPUI.getControl( labelStatusInclino );
 
-    if ( mma.begin() ) {
+    if( mma.begin() ) {
       initialisation.inclinoType = SteerConfig::InclinoType::MMA8451;
 
       handle->value = "MMA8451 found & initialized";
@@ -746,13 +746,13 @@ void initSensors() {
       handle->color = ControlColor::Alizarin;
     }
 
-    ESPUI.updateControl( handle );
+    ESPUI.updateControlAsync( handle );
   }
 
-  if ( steerConfig.imuType == SteerConfig::ImuType::BNO055 ) {
+  if( steerConfig.imuType == SteerConfig::ImuType::BNO055 ) {
     Control* handle = ESPUI.getControl( labelStatusImu );
 
-    if ( bno.begin() ) {
+    if( bno.begin() ) {
       initialisation.imuType = SteerConfig::ImuType::BNO055;
 
       handle->value = "BNO055 found & initialized";
@@ -760,7 +760,7 @@ void initSensors() {
 
       displaySensorOffsets( bno055CalibrationData );
 
-      if ( bno055CalibrationData.mag_radius != 0xffff ) {
+      if( bno055CalibrationData.mag_radius != 0xffff ) {
         bno.setSensorOffsets( bno055CalibrationData );
       }
 
@@ -772,52 +772,52 @@ void initSensors() {
       handle->color = ControlColor::Alizarin;
     }
 
-    ESPUI.updateControl( handle );
+    ESPUI.updateControlAsync( handle );
   }
 
-  if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
-       steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
+  if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
+      steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
 
-    if ( fxas2100.begin() && fxos8700.begin( ACCEL_RANGE_2G ) ) {
+    if( fxas2100.begin() && fxos8700.begin( ACCEL_RANGE_2G ) ) {
 
-      if ( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
+      if( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
         initialisation.imuType = steerConfig.imuType;
 
         Control* handle = ESPUI.getControl( labelStatusImu );
         handle->value = "FXAS2100/FXOS8700 found & initialized";
         handle->color = ControlColor::Emerald;
-        ESPUI.updateControl( handle );
+        ESPUI.updateControlAsync( handle );
       }
 
-      if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
+      if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
         initialisation.inclinoType = steerConfig.inclinoType;
 
         Control* handle = ESPUI.getControl( labelStatusInclino );
         handle->value = "FXAS2100/FXOS8700 found & initialized";
         handle->color = ControlColor::Emerald;
-        ESPUI.updateControl( handle );
+        ESPUI.updateControlAsync( handle );
       }
 
       ahrs.begin( 100 );
     } else {
 
 
-      if ( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
+      if( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
         initialisation.imuType = SteerConfig::ImuType::None;
 
         Control* handle = ESPUI.getControl( labelStatusImu );
         handle->value = "FXAS2100/FXOS8700 not found";
         handle->color = ControlColor::Alizarin;
-        ESPUI.updateControl( handle );
+        ESPUI.updateControlAsync( handle );
       }
 
-      if ( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
+      if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
         initialisation.inclinoType = SteerConfig::InclinoType::None;
 
         Control* handle = ESPUI.getControl( labelStatusInclino );
         handle->value = "FXAS2100/FXOS8700 not found";
         handle->color = ControlColor::Alizarin;
-        ESPUI.updateControl( handle );
+        ESPUI.updateControlAsync( handle );
       }
     }
 
@@ -839,14 +839,14 @@ void initSensors() {
     handle->value = "ADC1115 initialized";
     handle->color = ControlColor::Emerald;
     initialisation.wheelAngleInput = steerConfig.wheelAngleInput;
-    ESPUI.updateControl( handle );
+    ESPUI.updateControlAsync( handle );
   }
 
-  if ( steerConfig.imuType == SteerConfig::ImuType::BNO055 ) {
+  if( steerConfig.imuType == SteerConfig::ImuType::BNO055 ) {
     xTaskCreate( sensorWorker1HzPoller, "sensorWorker1HzPoller", 4096, NULL, 1, NULL );
   }
 
-  if ( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
+  if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
     xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 4096, NULL, 5, NULL );
   }
 

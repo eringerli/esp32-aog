@@ -77,7 +77,7 @@ DNSServer dnsServer;
 ///////////////////////////////////////////////////////////////////////////
 void setResetButtonToRed() {
   ESPUI.getControl( buttonReset )->color = ControlColor::Alizarin;
-  ESPUI.updateControl( buttonReset );
+  ESPUI.updateControlAsync( buttonReset );
 }
 
 void writeEeprom() {
@@ -147,8 +147,8 @@ void setup( void ) {
   EEPROM.begin( 4096 );
 
   // restore the settings from EEPROM
-  if ( ( EEPROM.readUChar( ( uint16_t )EepromAddresses::Validator ) != 0xff ) &&
-       ( EEPROM.readUShort( ( uint16_t )EepromAddresses::SizeOfConfig ) == sizeof( SteerConfig ) ) ) {
+  if( ( EEPROM.readUChar( ( uint16_t )EepromAddresses::Validator ) != 0xff ) &&
+      ( EEPROM.readUShort( ( uint16_t )EepromAddresses::SizeOfConfig ) == sizeof( SteerConfig ) ) ) {
     Serial.println( "Read from EEPROM" );
     EEPROM.get( ( uint16_t )EepromAddresses::Bno055CalibrationData, bno055CalibrationData );
     EEPROM.get( ( uint16_t )EepromAddresses::Fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationData );
@@ -179,10 +179,10 @@ void setup( void ) {
       delay( 500 );
       Serial.print( "." );
       timeout--;
-    } while ( timeout && WiFi.status() != WL_CONNECTED );
+    } while( timeout && WiFi.status() != WL_CONNECTED );
 
     // not connected -> create hotspot
-    if ( WiFi.status() != WL_CONNECTED ) {
+    if( WiFi.status() != WL_CONNECTED ) {
       Serial.print( "\n\nCreating hotspot" );
 
       digitalWrite( 13, LOW );
@@ -196,7 +196,7 @@ void setup( void ) {
         delay( 500 );
         Serial.print( "." );
         timeout--;
-      } while ( timeout );
+      } while( timeout );
     } else {
       digitalWrite( 13, HIGH );
     }
@@ -220,14 +220,14 @@ void setup( void ) {
 
   buttonReset = ESPUI.addControl( ControlType::Button, "Store the Settings", "Apply", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
-    if ( id == B_UP ) {
+    if( id == B_UP ) {
       writeEeprom();
     }
   } );
 
   buttonReset = ESPUI.addControl( ControlType::Button, "If this turn red, you have to", "Apply & Reboot", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
-    if ( id == B_UP ) {
+    if( id == B_UP ) {
       writeEeprom();
       ESP.restart();
     }
@@ -972,7 +972,7 @@ void setup( void ) {
       []( Control * control, int id ) {
         char ssid[24], password[24], hostname[24];
 
-        if ( steerConfig.retainWifiSettings ) {
+        if( steerConfig.retainWifiSettings ) {
           memcpy( ssid, steerConfig.ssid, sizeof( ssid ) );
           memcpy( password, steerConfig.password, sizeof( password ) );
           memcpy( hostname, steerConfig.hostname, sizeof( hostname ) );
@@ -980,7 +980,7 @@ void setup( void ) {
 
         steerConfig = steerConfigDefaults;
 
-        if ( steerConfig.retainWifiSettings ) {
+        if( steerConfig.retainWifiSettings ) {
           memcpy( steerConfig.ssid, ssid, sizeof( ssid ) );
           memcpy( steerConfig.password, password, sizeof( password ) );
           memcpy( steerConfig.hostname, hostname, sizeof( hostname ) );

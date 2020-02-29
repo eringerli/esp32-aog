@@ -21,29 +21,34 @@
 // SOFTWARE.
 
 #include <ESPUI.h>
+#include "esp_freertos_hooks.h"
+#include "esp_heap_trace.h"
 
 #include "main.hpp"
 
 volatile uint16_t idleCtrCore0 = 0;
 volatile uint16_t idleCtrCore1 = 0;
-void core0IdleWorker( void* z ) {
-  constexpr TickType_t xFrequency = 1;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  while ( 1 ) {
+bool core0IdleWorker( void ) {
+  static TickType_t xLastWakeTime0;
+
+  if( xLastWakeTime0 != xTaskGetTickCount() ) {
+    xLastWakeTime0 = xTaskGetTickCount();
     idleCtrCore0++;
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
+
+  return true;
 }
 
-void core1IdleWorker( void* z ) {
-  constexpr TickType_t xFrequency = 1;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
+bool core1IdleWorker( void ) {
+  static TickType_t xLastWakeTime1;
 
-  while ( 1 ) {
+  if( xLastWakeTime1 != xTaskGetTickCount() ) {
+    xLastWakeTime1 = xTaskGetTickCount();
     idleCtrCore1++;
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
+
+  return true;
 }
 
 void idleStatsWorker( void* z ) {
@@ -51,9 +56,13 @@ void idleStatsWorker( void* z ) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   String str;
-  str.reserve( 40 );
+  str.reserve( 150 );
 
-  while ( 1 ) {
+  multi_heap_info_t heapInfo;
+
+  while( 1 ) {
+    heap_caps_get_info( &heapInfo, MALLOC_CAP_8BIT );
+
     str = "Core0: ";
     str += 1000 - idleCtrCore0;
     str += "‰<br/>";
@@ -61,22 +70,31 @@ void idleStatsWorker( void* z ) {
     str += 1000 - idleCtrCore1;
     str += "‰<br/>Uptime: ";
     str += millis() / 1000;
-    str += "s";
+    str += "s<br/>Heap free: ";
+    str += heapInfo.total_free_bytes / 1024;
+    str += "kB of ";
+    str += heapInfo.total_allocated_bytes / 1024;
+    str += "kB<br/>Lowest ever free Heap: ";
+    str += heapInfo.minimum_free_bytes / 1024;
+    str += "kB<br/>Largest free block on Heap: ";
+    str += heapInfo.largest_free_block / 1024;
+    str += "kB";
 
     Control* labelLoadHandle = ESPUI.getControl( labelLoad );
     labelLoadHandle->value = str;
-    ESPUI.updateControl( labelLoadHandle );
+    ESPUI.updateControlAsync( labelLoadHandle );
 
     idleCtrCore0 = 0;
     idleCtrCore1 = 0;
+
+    ESPUI.updateControlAsyncTransmit();
 
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
 }
 
-
 void initIdleStats() {
-  xTaskCreatePinnedToCore( core0IdleWorker, "Core0IdleWorker", 1024, NULL, tskIDLE_PRIORITY, NULL, 0 );
-  xTaskCreatePinnedToCore( core1IdleWorker, "Core1IdleWorker", 1024, NULL, tskIDLE_PRIORITY, NULL, 1 );
+  esp_register_freertos_idle_hook_for_cpu( core0IdleWorker, 0 );
+  esp_register_freertos_idle_hook_for_cpu( core1IdleWorker, 1 );
   xTaskCreate( idleStatsWorker, "IdleStats", 4096, NULL, 10, NULL );
 }

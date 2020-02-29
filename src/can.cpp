@@ -50,13 +50,13 @@ void canWorker10Hz( void* z ) {
 
   CAN_frame_t canFrame;
 
-  while ( 1 ) {
-    if ( xQueueReceive( CAN_cfg.rx_queue, &canFrame, xFrequency ) == pdTRUE ) {
-      if ( canFrame.FIR.B.FF == CAN_frame_ext ) {
+  while( 1 ) {
+    if( xQueueReceive( CAN_cfg.rx_queue, &canFrame, xFrequency ) == pdTRUE ) {
+      if( canFrame.FIR.B.FF == CAN_frame_ext ) {
 
         uint16_t pgn = ( canFrame.MsgID >> IsobusPgPos ) & IsobusPgnMask;
 
-        switch ( pgn ) {
+        switch( pgn ) {
 
           // Electronic Engine Controller 1
           case j1939PgnEEC1: {
@@ -100,7 +100,7 @@ void canWorker10Hz( void* z ) {
     {
       static uint8_t loopTimeToWaitTo = 0;
 
-      if ( loopTimeToWaitTo < millis() ) {
+      if( loopTimeToWaitTo < millis() ) {
 
         Control* handle = ESPUI.getControl( labelStatusCan );
         String str;
@@ -121,7 +121,7 @@ void canWorker10Hz( void* z ) {
         str += "</td></tr></table>";
 
         handle->value = str;
-        ESPUI.updateControl( handle );
+        ESPUI.updateControlAsync( handle );
 
         loopTimeToWaitTo = millis() + xFrequency;
       }
@@ -131,7 +131,7 @@ void canWorker10Hz( void* z ) {
 
 
 void initCan() {
-  if ( steerConfig.canBusEnabled ) {
+  if( steerConfig.canBusEnabled ) {
     CAN_cfg.speed = ( CAN_speed_t )steerConfig.canBusSpeed;
     CAN_cfg.tx_pin_id = ( gpio_num_t )steerConfig.canBusRx;
     CAN_cfg.rx_pin_id = ( gpio_num_t )steerConfig.canBusTx;

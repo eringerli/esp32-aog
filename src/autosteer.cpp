@@ -37,11 +37,11 @@ AsyncUDP udpRemotePort;
 
 double pidOutput = 0;
 AutoPID pid(
-  &( steerSetpoints.actualSteerAngle ),
-  &( steerSetpoints.requestedSteerAngle ),
-  &( pidOutput ),
-  -255, 255,
-  steerConfig.steeringPidKp, steerConfig.steeringPidKi, steerConfig.steeringPidKd );
+        &( steerSetpoints.actualSteerAngle ),
+        &( steerSetpoints.requestedSteerAngle ),
+        &( pidOutput ),
+        -255, 255,
+        steerConfig.steeringPidKp, steerConfig.steeringPidKi, steerConfig.steeringPidKd );
 
 constexpr time_t Timeout = 2000;
 
@@ -51,14 +51,14 @@ void autosteerWorker100Hz( void* z ) {
 
   pid.setTimeStep( xFrequency );
 
-  for ( ;; ) {
+  for( ;; ) {
     time_t timeoutPoint = millis() - Timeout;
 
     // check for timeout and data from AgOpenGPS
-    if ( steerSetpoints.lastPacketReceived < timeoutPoint ||
-         steerSetpoints.distanceFromLine == 32020/* ||
+    if( steerSetpoints.lastPacketReceived < timeoutPoint ||
+        steerSetpoints.distanceFromLine == 32020/* ||
          steerSetpoints.speed < 1*/
-       ) {
+      ) {
       steerSetpoints.enabled = false;
 //       Serial.print( "Autosteer disabled: " );
 //       Serial.print( timeoutPoint );
@@ -67,7 +67,7 @@ void autosteerWorker100Hz( void* z ) {
 //       Serial.print( ", " );
 //       Serial.println( steerSetpoints.distanceFromLine );
 
-      switch ( initialisation.outputType ) {
+      switch( initialisation.outputType ) {
         case SteerConfig::OutputType::HydraulicDanfoss: {
           ledcWrite( 0, 128 );
           ledcWrite( 1, 0 );
@@ -81,7 +81,7 @@ void autosteerWorker100Hz( void* z ) {
         break;
       }
 
-      if ( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+      if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
         digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
       }
     } else {
@@ -89,27 +89,27 @@ void autosteerWorker100Hz( void* z ) {
 //       Serial.println( "Autosteer enabled" );
 
       // use AOG-values
-      if ( steerConfig.allowPidOverwrite == true ) {
+      if( steerConfig.allowPidOverwrite == true ) {
 
         static uint8_t loopCounter = 0;
 
-        if ( ++loopCounter >= 10 ) {
+        if( ++loopCounter >= 10 ) {
           loopCounter = 0;
 
           //close enough to center, 4 cm, remove any correction
-          if ( steerSetpoints.distanceFromLine <= 40 && steerSetpoints.distanceFromLine >= -40 ) {
+          if( steerSetpoints.distanceFromLine <= 40 && steerSetpoints.distanceFromLine >= -40 ) {
             steerSetpoints.correction = 0;
           } else {
             //use the integal value to adjust how much per cycle it increases
             steerSetpoints.correction += steerSettings.Ki;
 
             //provide a limit - the old max integral value
-            if ( steerSetpoints.correction > steerSettings.maxIntegralValue ) {
+            if( steerSetpoints.correction > steerSettings.maxIntegralValue ) {
               steerSetpoints.correction = steerSettings.maxIntegralValue;
             }
 
             //now add the correction to fool steering position
-            if ( steerSetpoints.distanceFromLine > 40 ) {
+            if( steerSetpoints.distanceFromLine > 40 ) {
               steerSetpoints.requestedSteerAngle -= steerSetpoints.correction;
             } else {
               steerSetpoints.requestedSteerAngle += steerSetpoints.correction;
@@ -135,22 +135,22 @@ void autosteerWorker100Hz( void* z ) {
 //           Serial.print( ", driveValue: " );
 //           Serial.print( driveValue );
 
-          if ( driveValue > 0xFF ) {
+          if( driveValue > 0xFF ) {
             driveValue = 0xFF;
           }
 
-          if ( driveValue < -0xFF ) {
+          if( driveValue < -0xFF ) {
             driveValue = -0xFF;
           }
 
 //           Serial.print( ", " );
 //           Serial.print( driveValue );
 
-          if ( driveValue < 0 && driveValue > -steerSettings.minPWMValue ) {
+          if( driveValue < 0 && driveValue > -steerSettings.minPWMValue ) {
             driveValue = -steerSettings.minPWMValue;
           }
 
-          if ( driveValue > 0 && driveValue < steerSettings.minPWMValue ) {
+          if( driveValue > 0 && driveValue < steerSettings.minPWMValue ) {
             driveValue = steerSettings.minPWMValue;
           }
 
@@ -159,15 +159,15 @@ void autosteerWorker100Hz( void* z ) {
 //           Serial.println( driveValue );
 
 
-          switch ( initialisation.outputType ) {
+          switch( initialisation.outputType ) {
             case SteerConfig::OutputType::SteeringMotorIBT2:
             case SteerConfig::OutputType::HydraulicPwm2Coil: {
-              if ( driveValue >= 0 ) {
+              if( driveValue >= 0 ) {
                 ledcWrite( 0, driveValue );
                 ledcWrite( 1, 0 );
               }
 
-              if ( driveValue < 0 ) {
+              if( driveValue < 0 ) {
                 ledcWrite( 0, 0 );
                 ledcWrite( 1, -driveValue );
               }
@@ -175,7 +175,7 @@ void autosteerWorker100Hz( void* z ) {
             break;
 
             case SteerConfig::OutputType::SteeringMotorCytron: {
-              if ( driveValue >= 0 ) {
+              if( driveValue >= 0 ) {
                 ledcWrite( 1, 255 );
               } else {
                 ledcWrite( 0, 255 );
@@ -184,7 +184,7 @@ void autosteerWorker100Hz( void* z ) {
 
               ledcWrite( 0, driveValue );
 
-              if ( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+              if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
                 digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
               }
             }
@@ -193,11 +193,11 @@ void autosteerWorker100Hz( void* z ) {
             case SteerConfig::OutputType::HydraulicDanfoss: {
 
               // go from 25% on: max left, 50% on: center, 75% on: right max
-              if ( driveValue >  250 ) {
+              if( driveValue >  250 ) {
                 driveValue =  250;
               }
 
-              if ( driveValue < -250 ) {
+              if( driveValue < -250 ) {
                 driveValue = -250;
               }
 
@@ -211,7 +211,7 @@ void autosteerWorker100Hz( void* z ) {
               break;
           }
 
-          if ( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+          if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
             digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
           }
         }
@@ -220,7 +220,7 @@ void autosteerWorker100Hz( void* z ) {
       } else {
         pid.setGains( steerConfig.steeringPidKp, steerConfig.steeringPidKi, steerConfig.steeringPidKd );
 
-        if ( steerConfig.steeringPidAutoBangOnFactor ) {
+        if( steerConfig.steeringPidAutoBangOnFactor ) {
           pid.setBangBang( ( ( double )0xFF / steerSettings.Kp ) * steerConfig.steeringPidAutoBangOnFactor, steerConfig.steeringPidBangOff );
         } else {
           pid.setBangBang( steerConfig.steeringPidBangOn, steerConfig.steeringPidBangOff );
@@ -237,15 +237,15 @@ void autosteerWorker100Hz( void* z ) {
 //         Serial.print( "pidOutput: " );
 //         Serial.println( pidOutput );
 
-        if ( pidOutput ) {
+        if( pidOutput ) {
 
           double pidOutputTmp = steerConfig.invertOutput ? pidOutput : -pidOutput;
 
-          if ( pidOutputTmp < 0 && pidOutputTmp > -steerConfig.steeringPidMinPwm ) {
+          if( pidOutputTmp < 0 && pidOutputTmp > -steerConfig.steeringPidMinPwm ) {
             pidOutputTmp = -steerConfig.steeringPidMinPwm;
           }
 
-          if ( pidOutputTmp > 0 && pidOutputTmp < steerConfig.steeringPidMinPwm ) {
+          if( pidOutputTmp > 0 && pidOutputTmp < steerConfig.steeringPidMinPwm ) {
             pidOutputTmp = steerConfig.steeringPidMinPwm;
           }
 
@@ -262,15 +262,15 @@ void autosteerWorker100Hz( void* z ) {
 //             }
 //           }
 
-          switch ( initialisation.outputType ) {
+          switch( initialisation.outputType ) {
             case SteerConfig::OutputType::SteeringMotorIBT2:
             case SteerConfig::OutputType::HydraulicPwm2Coil: {
-              if ( pidOutputTmp >= 0 ) {
+              if( pidOutputTmp >= 0 ) {
                 ledcWrite( 0, pidOutputTmp );
                 ledcWrite( 1, 0 );
               }
 
-              if ( pidOutputTmp < 0 ) {
+              if( pidOutputTmp < 0 ) {
                 ledcWrite( 0, 0 );
                 ledcWrite( 1, -pidOutputTmp );
               }
@@ -278,7 +278,7 @@ void autosteerWorker100Hz( void* z ) {
             break;
 
             case SteerConfig::OutputType::SteeringMotorCytron: {
-              if ( pidOutputTmp >= 0 ) {
+              if( pidOutputTmp >= 0 ) {
                 ledcWrite( 1, 255 );
               } else {
                 ledcWrite( 0, 255 );
@@ -287,7 +287,7 @@ void autosteerWorker100Hz( void* z ) {
 
               ledcWrite( 0, pidOutputTmp );
 
-              if ( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+              if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
                 digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
               }
             }
@@ -296,11 +296,11 @@ void autosteerWorker100Hz( void* z ) {
             case SteerConfig::OutputType::HydraulicDanfoss: {
 
               // go from 25% on: max left, 50% on: center, 75% on: right max
-              if ( pidOutputTmp >  250 ) {
+              if( pidOutputTmp >  250 ) {
                 pidOutputTmp =  250;
               }
 
-              if ( pidOutputTmp < -250 ) {
+              if( pidOutputTmp < -250 ) {
                 pidOutputTmp = -250;
               }
 
@@ -314,7 +314,7 @@ void autosteerWorker100Hz( void* z ) {
               break;
           }
 
-          if ( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+          if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
             digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
           }
         } else {
@@ -327,10 +327,10 @@ void autosteerWorker100Hz( void* z ) {
     {
       static uint8_t loopCounter = 0;
 
-      if ( ++loopCounter >= 10 ) {
+      if( ++loopCounter >= 10 ) {
         loopCounter = 0;
 
-        if ( initialisation.outputType != SteerConfig::OutputType::None ) {
+        if( initialisation.outputType != SteerConfig::OutputType::None ) {
           uint8_t data[10] = {0};
           data[0] = 0x7F;
           data[1] = 0xFD;
@@ -344,7 +344,7 @@ void autosteerWorker100Hz( void* z ) {
           {
             uint16_t heading;
 
-            if ( initialisation.imuType != SteerConfig::ImuType::None ) {
+            if( initialisation.imuType != SteerConfig::ImuType::None ) {
               heading = ( float )steerImuInclinometerData.heading * 16;
             } else {
               heading = 9999;
@@ -357,10 +357,10 @@ void autosteerWorker100Hz( void* z ) {
           {
             int16_t roll;
 
-            if ( initialisation.inclinoType != SteerConfig::InclinoType::None ) {
+            if( initialisation.inclinoType != SteerConfig::InclinoType::None ) {
               roll = steerImuInclinometerData.roll * 16;
 
-              if ( steerConfig.invertRoll ) {
+              if( steerConfig.invertRoll ) {
                 roll = -roll;
               }
             } else {
@@ -373,12 +373,12 @@ void autosteerWorker100Hz( void* z ) {
 
           // read inputs
           {
-            if ( steerConfig.workswitchType != SteerConfig::WorkswitchType::None ) {
+            if( steerConfig.workswitchType != SteerConfig::WorkswitchType::None ) {
               uint16_t value = 0;
               uint16_t threshold = 0;
               uint16_t hysteresis = 0;
 
-              switch ( steerConfig.workswitchType ) {
+              switch( steerConfig.workswitchType ) {
                 case SteerConfig::WorkswitchType::Gpio:
                   value =  digitalRead( ( uint8_t )steerConfig.gpioWorkswitch ) ? 1 : 0;
                   threshold = 1;
@@ -421,22 +421,22 @@ void autosteerWorker100Hz( void* z ) {
 
               static bool workswitchState = false;
 
-              if ( value >= threshold ) {
+              if( value >= threshold ) {
                 workswitchState = true;
               }
 
-              if ( value < ( threshold - hysteresis ) ) {
+              if( value < ( threshold - hysteresis ) ) {
                 workswitchState = false;
               }
 
-              if ( steerConfig.workswitchActiveLow ) {
+              if( steerConfig.workswitchActiveLow ) {
                 workswitchState = ! workswitchState;
               }
 
               data[8] |= workswitchState ? 1 : 0;
             }
 
-            if ( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
+            if( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
               static time_t lastRisingEdge = 0;
               static bool lastInputState = false;
 
@@ -444,22 +444,22 @@ void autosteerWorker100Hz( void* z ) {
 
               bool currentState = digitalRead( ( uint8_t )steerConfig.gpioSteerswitch );
 
-              if ( currentState != lastInputState ) {
+              if( currentState != lastInputState ) {
                 // rising edge
-                if ( currentState == true ) {
+                if( currentState == true ) {
                   steerswitchState = !steerswitchState;
                   lastRisingEdge = millis();
                 }
 
                 // falling edge
-                if ( currentState == false ) {
-                  if ( lastRisingEdge + steerConfig.autoRecogniseSteerGpioAsSwitchOrButton < millis() ) {
+                if( currentState == false ) {
+                  if( lastRisingEdge + steerConfig.autoRecogniseSteerGpioAsSwitchOrButton < millis() ) {
                     steerswitchState = false;
                   }
                 }
               }
 
-              if ( steerConfig.steerswitchActiveLow ) {
+              if( steerConfig.steerswitchActiveLow ) {
                 steerswitchState = ! steerswitchState;
               }
 
@@ -470,7 +470,7 @@ void autosteerWorker100Hz( void* z ) {
           udpSendFrom.broadcastTo( data, sizeof( data ), initialisation.portSendTo );
 
         } else {
-          if ( initialisation.inclinoType !=  SteerConfig::InclinoType::None || initialisation.imuType != SteerConfig::ImuType::None ) {
+          if( initialisation.inclinoType !=  SteerConfig::InclinoType::None || initialisation.imuType != SteerConfig::ImuType::None ) {
             uint8_t data[10] = {0};
             data[0] = 0x7F;
             data[1] = 0xEE;
@@ -478,7 +478,7 @@ void autosteerWorker100Hz( void* z ) {
             {
               uint16_t heading;
 
-              if ( initialisation.imuType != SteerConfig::ImuType::None ) {
+              if( initialisation.imuType != SteerConfig::ImuType::None ) {
                 heading = ( float )steerImuInclinometerData.heading * 16;
               } else {
                 heading = 9999;
@@ -491,7 +491,7 @@ void autosteerWorker100Hz( void* z ) {
             {
               uint16_t roll;
 
-              if ( initialisation.inclinoType != SteerConfig::InclinoType::None ) {
+              if( initialisation.inclinoType != SteerConfig::InclinoType::None ) {
                 roll = steerImuInclinometerData.roll * 16;
               } else {
                 roll = 9999;
@@ -512,27 +512,27 @@ void autosteerWorker100Hz( void* z ) {
 }
 
 void initAutosteer() {
-  if ( steerConfig.portSendFrom != 0 ) {
+  if( steerConfig.portSendFrom != 0 ) {
     initialisation.portSendFrom = steerConfig.portSendFrom;
   }
 
-  if ( steerConfig.portListenTo != 0 ) {
+  if( steerConfig.portListenTo != 0 ) {
     initialisation.portListenTo = steerConfig.portListenTo;
   }
 
-  if ( steerConfig.portSendTo != 0 ) {
+  if( steerConfig.portSendTo != 0 ) {
     initialisation.portSendTo = steerConfig.portSendTo;
   }
 
   udpSendFrom.listen( initialisation.portSendFrom );
 
-  if ( udpLocalPort.listen( initialisation.portListenTo ) ) {
+  if( udpLocalPort.listen( initialisation.portListenTo ) ) {
     udpLocalPort.onPacket( []( AsyncUDPPacket packet ) {
       uint8_t* data = packet.data();
       uint16_t pgn = data[1] + ( data[0] << 8 );
 
       // see pgn.xlsx in https://github.com/farmerbriantee/AgOpenGPS/tree/master/AgOpenGPS_Dev
-      switch ( pgn ) {
+      switch( pgn ) {
         case 0x7FFE: {
           steerSetpoints.relais = data[2];
           steerSetpoints.speed = ( float )data[3] / 4;
@@ -574,18 +574,18 @@ void initAutosteer() {
   }
 
   // if no inclinometer is configured, try to receive the value from the net
-  if ( initialisation.inclinoType == SteerConfig::InclinoType::None ) {
-    if ( udpRemotePort.listen( initialisation.portSendTo ) ) {
+  if( initialisation.inclinoType == SteerConfig::InclinoType::None ) {
+    if( udpRemotePort.listen( initialisation.portSendTo ) ) {
       udpRemotePort.onPacket( []( AsyncUDPPacket packet ) {
         uint8_t* data = packet.data();
         uint16_t pgn = data[1] + ( data[0] << 8 );
 
         // see pgn.xlsx in https://github.com/farmerbriantee/AgOpenGPS/tree/master/AgOpenGPS_Dev
-        switch ( pgn ) {
+        switch( pgn ) {
           case 0x7FFD: {
             uint16_t rollInteger = data[7] + ( data[6 << 8] );
 
-            if ( rollInteger != 9999 ) {
+            if( rollInteger != 9999 ) {
               steerSetpoints.receivedRoll = ( float )rollInteger / 16;
             }
           }
@@ -594,7 +594,7 @@ void initAutosteer() {
           case 0x7FEE: {
             uint16_t rollInteger = data[7] + ( data[6 << 8] );
 
-            if ( rollInteger != 9999 ) {
+            if( rollInteger != 9999 ) {
               steerSetpoints.receivedRoll = ( float )rollInteger / 16;
             }
           }
@@ -609,42 +609,42 @@ void initAutosteer() {
 
   // init output
   {
-    if ( steerConfig.gpioPwm != SteerConfig::Gpio::None ) {
+    if( steerConfig.gpioPwm != SteerConfig::Gpio::None ) {
       pinMode( ( uint8_t )steerConfig.gpioPwm, OUTPUT );
       ledcSetup( 0, 1000/*steerConfig.pwmFrequency*/, 8 );
       ledcAttachPin( ( uint8_t )steerConfig.gpioPwm, 0 );
       ledcWrite( 0, 0 );
     }
 
-    if ( steerConfig.gpioDir != SteerConfig::Gpio::None ) {
+    if( steerConfig.gpioDir != SteerConfig::Gpio::None ) {
       pinMode( ( uint8_t )steerConfig.gpioDir, OUTPUT );
       ledcSetup( 0, 1000/*steerConfig.pwmFrequency*/, 8 );
       ledcAttachPin( ( uint8_t )steerConfig.gpioDir, 0 );
       ledcWrite( 0, 0 );
     }
 
-    if ( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+    if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
       pinMode( ( uint8_t )steerConfig.gpioEn, OUTPUT );
       digitalWrite( ( uint8_t )steerConfig.gpioEn, LOW );
     }
 
-    switch ( steerConfig.outputType ) {
+    switch( steerConfig.outputType ) {
       case SteerConfig::OutputType::SteeringMotorIBT2: {
         Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
 
-        if ( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
-             steerConfig.gpioDir != SteerConfig::Gpio::None &&
-             steerConfig.gpioEn  != SteerConfig::Gpio::None ) {
+        if( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
+            steerConfig.gpioDir != SteerConfig::Gpio::None &&
+            steerConfig.gpioEn  != SteerConfig::Gpio::None ) {
           labelStatusOutputHandle->value = "Output configured";
           labelStatusOutputHandle->color = ControlColor::Emerald;
-          ESPUI.updateControl( labelStatusOutputHandle );
+          ESPUI.updateControlAsync( labelStatusOutputHandle );
 
           initialisation.outputType = SteerConfig::OutputType::SteeringMotorIBT2;
         } else {
           {
             labelStatusOutputHandle->value = "GPIOs not correctly defined";
             labelStatusOutputHandle->color = ControlColor::Carrot;
-            ESPUI.updateControl( labelStatusOutputHandle );
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
           }
         }
       }
@@ -653,18 +653,18 @@ void initAutosteer() {
       case SteerConfig::OutputType::SteeringMotorCytron: {
         Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
 
-        if ( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
-             steerConfig.gpioDir != SteerConfig::Gpio::None ) {
+        if( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
+            steerConfig.gpioDir != SteerConfig::Gpio::None ) {
           labelStatusOutputHandle->value = "Output configured";
           labelStatusOutputHandle->color = ControlColor::Emerald;
-          ESPUI.updateControl( labelStatusOutputHandle );
+          ESPUI.updateControlAsync( labelStatusOutputHandle );
 
           initialisation.outputType = SteerConfig::OutputType::SteeringMotorCytron;
         } else {
           {
             labelStatusOutputHandle->value = "GPIOs not correctly defined";
             labelStatusOutputHandle->color = ControlColor::Carrot;
-            ESPUI.updateControl( labelStatusOutputHandle );
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
           }
         }
       }
@@ -673,18 +673,18 @@ void initAutosteer() {
       case SteerConfig::OutputType::HydraulicPwm2Coil: {
         Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
 
-        if ( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
-             steerConfig.gpioDir != SteerConfig::Gpio::None ) {
+        if( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
+            steerConfig.gpioDir != SteerConfig::Gpio::None ) {
           labelStatusOutputHandle->value = "Output configured";
           labelStatusOutputHandle->color = ControlColor::Emerald;
-          ESPUI.updateControl( labelStatusOutputHandle );
+          ESPUI.updateControlAsync( labelStatusOutputHandle );
 
           initialisation.outputType = SteerConfig::OutputType::HydraulicPwm2Coil;
         } else {
           {
             labelStatusOutputHandle->value = "GPIOs not correctly defined";
             labelStatusOutputHandle->color = ControlColor::Carrot;
-            ESPUI.updateControl( labelStatusOutputHandle );
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
           }
         }
       }
@@ -693,18 +693,18 @@ void initAutosteer() {
       case SteerConfig::OutputType::HydraulicDanfoss: {
         Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
 
-        if ( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
-             steerConfig.gpioDir != SteerConfig::Gpio::None ) {
+        if( steerConfig.gpioPwm != SteerConfig::Gpio::None &&
+            steerConfig.gpioDir != SteerConfig::Gpio::None ) {
           labelStatusOutputHandle->value = "Output configured";
           labelStatusOutputHandle->color = ControlColor::Emerald;
-          ESPUI.updateControl( labelStatusOutputHandle );
+          ESPUI.updateControlAsync( labelStatusOutputHandle );
 
           initialisation.outputType = SteerConfig::OutputType::HydraulicDanfoss;
         } else {
           {
             labelStatusOutputHandle->value = "GPIOs not correctly defined";
             labelStatusOutputHandle->color = ControlColor::Carrot;
-            ESPUI.updateControl( labelStatusOutputHandle );
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
           }
         }
       }
@@ -717,16 +717,16 @@ void initAutosteer() {
 
   }
 
-  if ( steerConfig.gpioWorkswitch != SteerConfig::Gpio::None ) {
+  if( steerConfig.gpioWorkswitch != SteerConfig::Gpio::None ) {
     pinMode( ( uint8_t )steerConfig.gpioWorkswitch, INPUT_PULLUP );
   }
 
-  if ( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
+  if( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
     pinMode( ( uint8_t )steerConfig.gpioSteerswitch, INPUT_PULLUP );
   }
 
-  if ( steerConfig.gpioWheelencoderA != SteerConfig::Gpio::None &&
-       steerConfig.gpioWheelencoderB != SteerConfig::Gpio::None ) {
+  if( steerConfig.gpioWheelencoderA != SteerConfig::Gpio::None &&
+      steerConfig.gpioWheelencoderB != SteerConfig::Gpio::None ) {
 
   }
 
