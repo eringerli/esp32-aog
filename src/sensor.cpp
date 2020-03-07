@@ -259,113 +259,12 @@ void displaySensorOffsets( const adafruit_bno055_offsets_t& calibData ) {
   Serial.println( calibData.mag_radius );
 }
 
-void sensorWorker1HzPoller( void* z ) {
-  vTaskDelay( 2000 );
-  uint8_t loopCounter = 0;
-
-  constexpr TickType_t xFrequency = 1000;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  for( ;; ) {
-    if( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
-
-      // Display calibration status for each sensor.
-      uint8_t system, gyro, accel, mag = 0;
-
-      if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
-        bno.getCalibration( &system, &gyro, &accel, &mag );
-        xSemaphoreGive( i2cMutex );
-      }
-
-//       Serial.print( "CALIBRATION: Sys=" );
-//       Serial.print( system, DEC );
-//       Serial.print( " Gyro=" );
-//       Serial.print( gyro, DEC );
-//       Serial.print( " Accel=" );
-//       Serial.print( accel, DEC );
-//       Serial.print( " Mag=" );
-//       Serial.println( mag, DEC );
-
-      {
-        Control* handle = ESPUI.getControl( labelStatusImu );
-
-        if( system == 3 && gyro == 3 && accel == 3 && mag == 3 ) {
-          handle->value = "BNO055 found & calibrated";
-          handle->color = ControlColor::Emerald;
-
-          // save to eeprom every 250s
-          if( loopCounter++ > 250 ) {
-            loopCounter = 0;
-
-            if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
-              bno.getSensorOffsets( bno055CalibrationData );
-              xSemaphoreGive( i2cMutex );
-            }
-
-            displaySensorOffsets( bno055CalibrationData );
-
-            Serial.println( "Calibration saved to EEPROM" );
-
-            writeEeprom();
-          }
-        } else {
-          String str;
-          str.reserve( 40 );
-          str += "BNO055 found but not calibrated: S:G:A:M=";
-          str += system;
-          str += ":";
-          str += gyro;
-          str += ":";
-          str += accel;
-          str += ":";
-          str += mag;
-          handle->value = str;
-          handle->color = ControlColor::Carrot;
-        }
-
-        ESPUI.updateControlAsync( handle );
-      }
-
-//       Serial.print( "Bno calibration Millis: " );
-//       Serial.print( millis() );
-//       Serial.print( " duration: " );
-//       Serial.println( millis() - start );
-    }
-
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
-  }
-}
-
 void sensorWorker100HzPoller( void* z ) {
   vTaskDelay( 2000 );
   constexpr TickType_t xFrequency = 10;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   for( ;; ) {
-    if( initialisation.imuType == SteerConfig::ImuType::BNO055 ) {
-      imu::Quaternion orientation;
-      imu::Vector<3> euler;
-
-      if( xSemaphoreTake( i2cMutex, 1000 ) == pdTRUE ) {
-        orientation = bno.getQuat();
-        xSemaphoreGive( i2cMutex );
-
-        // rotate by the correction
-        {
-          imu::Quaternion correction;
-          correction.fromEuler( radians( steerConfig.mountCorrectionImuRoll ),
-                                radians( steerConfig.mountCorrectionImuPitch ),
-                                radians( steerConfig.mountCorrectionImuYaw ) );
-
-          orientation = orientation * correction;
-        }
-
-        euler = orientation.toEuler();
-        euler.toDegrees();
-        steerImuInclinometerData.heading = filterHeading.step( euler[0] );;
-      }
-    }
-
     if( initialisation.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
         initialisation.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
 
@@ -749,32 +648,6 @@ void initSensors() {
     ESPUI.updateControlAsync( handle );
   }
 
-  if( steerConfig.imuType == SteerConfig::ImuType::BNO055 ) {
-    Control* handle = ESPUI.getControl( labelStatusImu );
-
-    if( bno.begin() ) {
-      initialisation.imuType = SteerConfig::ImuType::BNO055;
-
-      handle->value = "BNO055 found & initialized";
-      handle->color = ControlColor::Emerald;
-
-      displaySensorOffsets( bno055CalibrationData );
-
-      if( bno055CalibrationData.mag_radius != 0xffff ) {
-        bno.setSensorOffsets( bno055CalibrationData );
-      }
-
-      bno.setExtCrystalUse( true );
-    } else {
-      initialisation.imuType = SteerConfig::ImuType::None;
-
-      handle->value = "BNO055 not found";
-      handle->color = ControlColor::Alizarin;
-    }
-
-    ESPUI.updateControlAsync( handle );
-  }
-
   if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
       steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
 
@@ -800,8 +673,6 @@ void initSensors() {
 
       ahrs.begin( 100 );
     } else {
-
-
       if( steerConfig.imuType == SteerConfig::ImuType::Fxos8700Fxas21002 ) {
         initialisation.imuType = SteerConfig::ImuType::None;
 
@@ -840,10 +711,6 @@ void initSensors() {
     handle->color = ControlColor::Emerald;
     initialisation.wheelAngleInput = steerConfig.wheelAngleInput;
     ESPUI.updateControlAsync( handle );
-  }
-
-  if( steerConfig.imuType == SteerConfig::ImuType::BNO055 ) {
-    xTaskCreate( sensorWorker1HzPoller, "sensorWorker1HzPoller", 4096, NULL, 1, NULL );
   }
 
   if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {

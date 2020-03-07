@@ -88,147 +88,17 @@ void autosteerWorker100Hz( void* z ) {
       steerSetpoints.enabled = true;
 //       Serial.println( "Autosteer enabled" );
 
-      // use AOG-values
-      if( steerConfig.allowPidOverwrite == true ) {
+      pid.setGains( steerConfig.steeringPidKp, steerConfig.steeringPidKi, steerConfig.steeringPidKd );
 
-        static uint8_t loopCounter = 0;
-
-        if( ++loopCounter >= 10 ) {
-          loopCounter = 0;
-
-          //close enough to center, 4 cm, remove any correction
-          if( steerSetpoints.distanceFromLine <= 40 && steerSetpoints.distanceFromLine >= -40 ) {
-            steerSetpoints.correction = 0;
-          } else {
-            //use the integal value to adjust how much per cycle it increases
-            steerSetpoints.correction += steerSettings.Ki;
-
-            //provide a limit - the old max integral value
-            if( steerSetpoints.correction > steerSettings.maxIntegralValue ) {
-              steerSetpoints.correction = steerSettings.maxIntegralValue;
-            }
-
-            //now add the correction to fool steering position
-            if( steerSetpoints.distanceFromLine > 40 ) {
-              steerSetpoints.requestedSteerAngle -= steerSetpoints.correction;
-            } else {
-              steerSetpoints.requestedSteerAngle += steerSetpoints.correction;
-            }
-          }
-
-
-          float steerAngleError = steerSetpoints.actualSteerAngle - steerSetpoints.requestedSteerAngle;
-          float driveValue = steerSettings.Kp * steerAngleError * steerSettings.Ko * ( steerConfig.invertOutput ? -1 : 1 );
-
-//           Serial.print( "Kp,Ko,Ki,maxIntegralValue: " );
-//           Serial.print( steerSettings.Kp );
-//           Serial.print( "," );
-//           Serial.print( steerSettings.Ko );
-//           Serial.print( "," );
-//           Serial.print( steerSettings.Ki );
-//           Serial.print( "," );
-//           Serial.print( steerSettings.maxIntegralValue );
-//           Serial.print( "," );
-//
-//           Serial.print( "steerAngleError: " );
-//           Serial.print( steerAngleError );
-//           Serial.print( ", driveValue: " );
-//           Serial.print( driveValue );
-
-          if( driveValue > 0xFF ) {
-            driveValue = 0xFF;
-          }
-
-          if( driveValue < -0xFF ) {
-            driveValue = -0xFF;
-          }
-
-//           Serial.print( ", " );
-//           Serial.print( driveValue );
-
-          if( driveValue < 0 && driveValue > -steerSettings.minPWMValue ) {
-            driveValue = -steerSettings.minPWMValue;
-          }
-
-          if( driveValue > 0 && driveValue < steerSettings.minPWMValue ) {
-            driveValue = steerSettings.minPWMValue;
-          }
-
-
-//           Serial.print( ", " );
-//           Serial.println( driveValue );
-
-
-          switch( initialisation.outputType ) {
-            case SteerConfig::OutputType::SteeringMotorIBT2:
-            case SteerConfig::OutputType::HydraulicPwm2Coil: {
-              if( driveValue >= 0 ) {
-                ledcWrite( 0, driveValue );
-                ledcWrite( 1, 0 );
-              }
-
-              if( driveValue < 0 ) {
-                ledcWrite( 0, 0 );
-                ledcWrite( 1, -driveValue );
-              }
-            }
-            break;
-
-            case SteerConfig::OutputType::SteeringMotorCytron: {
-              if( driveValue >= 0 ) {
-                ledcWrite( 1, 255 );
-              } else {
-                ledcWrite( 0, 255 );
-                driveValue = -driveValue;
-              }
-
-              ledcWrite( 0, driveValue );
-
-              if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
-                digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
-              }
-            }
-            break;
-
-            case SteerConfig::OutputType::HydraulicDanfoss: {
-
-              // go from 25% on: max left, 50% on: center, 75% on: right max
-              if( driveValue >  250 ) {
-                driveValue =  250;
-              }
-
-              if( driveValue < -250 ) {
-                driveValue = -250;
-              }
-
-              driveValue /= 4;
-              driveValue += 128;
-              ledcWrite( 0, driveValue );
-            }
-            break;
-
-            default:
-              break;
-          }
-
-          if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
-            digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
-          }
-        }
-
-        // our own PID schema
+      if( steerConfig.steeringPidAutoBangOnFactor ) {
+        pid.setBangBang( ( ( double )0xFF / steerSettings.Kp ) * steerConfig.steeringPidAutoBangOnFactor, steerConfig.steeringPidBangOff );
       } else {
-        pid.setGains( steerConfig.steeringPidKp, steerConfig.steeringPidKi, steerConfig.steeringPidKd );
+        pid.setBangBang( steerConfig.steeringPidBangOn, steerConfig.steeringPidBangOff );
+      }
 
-        if( steerConfig.steeringPidAutoBangOnFactor ) {
-          pid.setBangBang( ( ( double )0xFF / steerSettings.Kp ) * steerConfig.steeringPidAutoBangOnFactor, steerConfig.steeringPidBangOff );
-        } else {
-          pid.setBangBang( steerConfig.steeringPidBangOn, steerConfig.steeringPidBangOff );
-        }
-
-        // here comes the magic: executing the PID loop
-        // the values are given by pointers, so the AutoPID gets them automaticaly
-        pid.run();
+      // here comes the magic: executing the PID loop
+      // the values are given by pointers, so the AutoPID gets them automaticaly
+      pid.run();
 
 //         Serial.print( "actualSteerAngle: " );
 //         Serial.print( steerSetpoints.actualSteerAngle );
@@ -237,90 +107,76 @@ void autosteerWorker100Hz( void* z ) {
 //         Serial.print( "pidOutput: " );
 //         Serial.println( pidOutput );
 
-        if( pidOutput ) {
+      if( pidOutput ) {
 
-          double pidOutputTmp = steerConfig.invertOutput ? pidOutput : -pidOutput;
+        double pidOutputTmp = steerConfig.invertOutput ? pidOutput : -pidOutput;
 
-          if( pidOutputTmp < 0 && pidOutputTmp > -steerConfig.steeringPidMinPwm ) {
-            pidOutputTmp = -steerConfig.steeringPidMinPwm;
-          }
-
-          if( pidOutputTmp > 0 && pidOutputTmp < steerConfig.steeringPidMinPwm ) {
-            pidOutputTmp = steerConfig.steeringPidMinPwm;
-          }
-
-//           {
-//             static uint8_t loopCounter = 0;
-//
-//             if ( ++loopCounter >= 100 ) {
-//               loopCounter = 0;
-//               {
-//                 ESPUI.addGraphPoint( graphWheelAngle, 0, steerSetpoints.actualSteerAngle );
-//                 ESPUI.addGraphPoint( graphWheelAngle, 1, steerSetpoints.requestedSteerAngle );
-//                 ESPUI.addGraphPoint( graphWheelAngle, 2, random( 1, 100 ) );
-//               }
-//             }
-//           }
-
-          switch( initialisation.outputType ) {
-            case SteerConfig::OutputType::SteeringMotorIBT2:
-            case SteerConfig::OutputType::HydraulicPwm2Coil: {
-              if( pidOutputTmp >= 0 ) {
-                ledcWrite( 0, pidOutputTmp );
-                ledcWrite( 1, 0 );
-              }
-
-              if( pidOutputTmp < 0 ) {
-                ledcWrite( 0, 0 );
-                ledcWrite( 1, -pidOutputTmp );
-              }
-            }
-            break;
-
-            case SteerConfig::OutputType::SteeringMotorCytron: {
-              if( pidOutputTmp >= 0 ) {
-                ledcWrite( 1, 255 );
-              } else {
-                ledcWrite( 0, 255 );
-                pidOutputTmp = -pidOutputTmp;
-              }
-
-              ledcWrite( 0, pidOutputTmp );
-
-              if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
-                digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
-              }
-            }
-            break;
-
-            case SteerConfig::OutputType::HydraulicDanfoss: {
-
-              // go from 25% on: max left, 50% on: center, 75% on: right max
-              if( pidOutputTmp >  250 ) {
-                pidOutputTmp =  250;
-              }
-
-              if( pidOutputTmp < -250 ) {
-                pidOutputTmp = -250;
-              }
-
-              pidOutputTmp /= 4;
-              pidOutputTmp += 128;
-              ledcWrite( 0, pidOutputTmp );
-            }
-            break;
-
-            default:
-              break;
-          }
-
-          if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
-            digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
-          }
-        } else {
-          ledcWrite( 0, 0 );
-          ledcWrite( 1, 0 );
+        if( pidOutputTmp < 0 && pidOutputTmp > -steerConfig.steeringPidMinPwm ) {
+          pidOutputTmp = -steerConfig.steeringPidMinPwm;
         }
+
+        if( pidOutputTmp > 0 && pidOutputTmp < steerConfig.steeringPidMinPwm ) {
+          pidOutputTmp = steerConfig.steeringPidMinPwm;
+        }
+
+        switch( initialisation.outputType ) {
+          case SteerConfig::OutputType::SteeringMotorIBT2:
+          case SteerConfig::OutputType::HydraulicPwm2Coil: {
+            if( pidOutputTmp >= 0 ) {
+              ledcWrite( 0, pidOutputTmp );
+              ledcWrite( 1, 0 );
+            }
+
+            if( pidOutputTmp < 0 ) {
+              ledcWrite( 0, 0 );
+              ledcWrite( 1, -pidOutputTmp );
+            }
+          }
+          break;
+
+          case SteerConfig::OutputType::SteeringMotorCytron: {
+            if( pidOutputTmp >= 0 ) {
+              ledcWrite( 1, 255 );
+            } else {
+              ledcWrite( 0, 255 );
+              pidOutputTmp = -pidOutputTmp;
+            }
+
+            ledcWrite( 0, pidOutputTmp );
+
+            if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+              digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
+            }
+          }
+          break;
+
+          case SteerConfig::OutputType::HydraulicDanfoss: {
+
+            // go from 25% on: max left, 50% on: center, 75% on: right max
+            if( pidOutputTmp >  250 ) {
+              pidOutputTmp =  250;
+            }
+
+            if( pidOutputTmp < -250 ) {
+              pidOutputTmp = -250;
+            }
+
+            pidOutputTmp /= 4;
+            pidOutputTmp += 128;
+            ledcWrite( 0, pidOutputTmp );
+          }
+          break;
+
+          default:
+            break;
+        }
+
+        if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
+          digitalWrite( ( uint8_t )steerConfig.gpioEn, HIGH );
+        }
+      } else {
+        ledcWrite( 0, 0 );
+        ledcWrite( 1, 0 );
       }
     }
 

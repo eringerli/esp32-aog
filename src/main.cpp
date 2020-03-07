@@ -255,8 +255,6 @@ void setup( void ) {
   // Info Tab
   {
     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Info/Help", "Info/Help" );
-    ESPUI.addControl( ControlType::Label, "Attention:", "As this WebUI is great and looks good, it is quite taxing on the controller. So close the browser (actualy closing the tab, not minimizing) after you are finished with configuring. This helps with spurious crashes.", ControlColor::Carrot, tab );
-
     ESPUI.addControl( ControlType::Label, "Basics:", "This works with setting up the different options in the panels. If an option requires a reboot (indicated by the darker blue and an asterisk after the title), press on the button \"Apply & Reboot\" and refresh the page after some time, usually 5-10 seconds. Settings with the lighter shade of blue are applied immediately, but are not saved to the permanent memory. You can do this with the \"Apply\" button. If the values are complete garbage or you want a fresh start, set the config to defaults in the \"Configurations\" tab.", ControlColor::Carrot, tab );
 
     ESPUI.addControl( ControlType::Label, "Network:", "Here the network is configured. Leave it on defaults, only if used as roof controller (only GPS + IMU), set \"Port to send from\" to 5544.", ControlColor::Turquoise, tab );
@@ -495,11 +493,6 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "Two Arms connected to tie rod", "1", ControlColor::Alizarin, sel );
     }
 
-    ESPUI.addControl( ControlType::Switcher, "Allow AgOpenGPS to overwrite Counts per Degree and Steer Angle Center (not recomned)", steerConfig.allowWheelAngleCenterAndCountsOverwrite ? "1" : "0", ControlColor::Peterriver, tab,
-    []( Control * control, int id ) {
-      steerConfig.allowWheelAngleCenterAndCountsOverwrite = control->value.toInt() == 1;
-    } );
-
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Wheel Angle Sensor Center", String( steerConfig.wheelAnglePositionZero ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
@@ -655,11 +648,6 @@ void setup( void ) {
   {
     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering PID", "Steering PID" );
 
-//     ESPUI.addControl( ControlType::Switcher, "Allow AgOpenGPS to overwrite PID values", steerConfig.allowPidOverwrite ? "1" : "0", ControlColor::Peterriver, tab,
-//     []( Control * control, int id ) {
-//       steerConfig.allowPidOverwrite = control->value.toInt() == 1;
-//     } );
-
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "PID Kp", String( steerConfig.steeringPidKp, 4 ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
@@ -723,16 +711,6 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Max", "255", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
     }
-
-//     {
-//       uint16_t num = ESPUI.addControl( ControlType::Number, "Distance from Line to turn Integral/Derivative of PID off", String( steerConfig.steeringPidDflTurnIdOff ), ControlColor::Peterriver, tab,
-//       []( Control * control, int id ) {
-//         steerConfig.steeringPidDflTurnIdOff = control->value.toInt();
-//       } );
-//       ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
-//       ESPUI.addControl( ControlType::Max, "Max", "200", ControlColor::Peterriver, num );
-//       ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
-//     }
   }
 
   // Sensors Tab
@@ -773,7 +751,6 @@ void setup( void ) {
         setResetButtonToRed();
       } );
       ESPUI.addControl( ControlType::Option, "No IMU", "0", ControlColor::Alizarin, sel );
-      ESPUI.addControl( ControlType::Option, "BNO055", "1", ControlColor::Alizarin, sel );
       ESPUI.addControl( ControlType::Option, "FXOS8700/FXAS21002", "2", ControlColor::Alizarin, sel );
     }
     {
@@ -833,43 +810,6 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Step, "Step", "0.05", ControlColor::Peterriver, num );
     }
   }
-
-//   // Steering Wheel Encoder Tab
-//   {
-//     uint16_t tab  = ESPUI.addControl( ControlType::Tab, "Steering Wheel Encoder", "Steering Wheel Encoder" );
-//
-//     ESPUI.addControl( ControlType::Switcher, "Steering Wheel Encoder*", steerConfig.steeringWheelEncoder ?"1" : "0", ControlColor::Wetasphalt, tab,
-//     []( Control * control, int id ) {
-//       steerConfig.steeringWheelEncoder = control->value.toInt() == 1;
-//       setResetButtonToRed();
-//     } );
-//
-//     {
-//       uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input A*", String( ( int )steerConfig.gpioWheelencoderA ), ControlColor::Wetasphalt, tab,
-//       []( Control * control, int id ) {
-//         steerConfig.gpioWheelencoderA = ( SteerConfig::Gpio )control->value.toInt();
-//         setResetButtonToRed();
-//       } );
-//       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-//       addGpioInput( sel );
-//       addGpioOutput( sel );
-//     }
-//     {
-//       uint16_t sel = ESPUI.addControl( ControlType::Select, "Steering Wheel Encoder Input B*", String( ( int )steerConfig.gpioWheelencoderB ), ControlColor::Wetasphalt, tab,
-//       []( Control * control, int id ) {
-//         steerConfig.gpioWheelencoderB = ( SteerConfig::Gpio )control->value.toInt();
-//         setResetButtonToRed();
-//       } );
-//       ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
-//       addGpioInput( sel );
-//       addGpioOutput( sel );
-//     }
-//
-//     ESPUI.addControl( ControlType::Number, "Steering Wheel Encoder max Counts", String( steerConfig.wheelEncoderPulseCountMax ), ControlColor::Peterriver, tab,
-//     []( Control * control, int id ) {
-//       steerConfig.wheelEncoderPulseCountMax = control->value.toInt();
-//     } );
-//   }
 
   // NTRIP/GPS Tab
   {

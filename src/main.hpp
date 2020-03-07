@@ -33,7 +33,6 @@
 #include <ESPUI.h>
 
 #include <Adafruit_MMA8451.h>
-#include <Adafruit_BNO055.h>
 
 #include "average.hpp"
 
@@ -177,8 +176,8 @@ struct SteerConfig {
   uint32_t i2cBusSpeed = 400000;
   enum class ImuType : uint8_t {
     None = 0,
-    BNO055 = 1,
-    Fxos8700Fxas21002
+//     BNO055 = 1,
+    Fxos8700Fxas21002 = 2
   } imuType = ImuType::None;
 
   enum class InclinoType : uint8_t {
@@ -250,9 +249,6 @@ struct SteerConfig {
 
 };
 extern SteerConfig steerConfig, steerConfigDefaults;
-
-extern adafruit_bno055_offsets_t bno055CalibrationData;
-
 struct Fxos8700Fxas21002CalibrationData {
 
   Fxos8700Fxas21002CalibrationData() {
@@ -390,7 +386,6 @@ extern EEPROM32_Rotate EEPROM;
 extern AsyncUDP udpSendFrom;
 
 extern Adafruit_MMA8451 mma;
-extern Adafruit_BNO055 bno;
 
 ///////////////////////////////////////////////////////////////////////////
 // Helper Classes
