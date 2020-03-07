@@ -100,6 +100,7 @@ struct SteerConfig {
   char ssid[24] = "AOG";
   char password[24] = "aogaogaog";
   char hostname[24] = "ESP32-AOG";
+  SteerConfig::Gpio apModePin = SteerConfig::Gpio::None;
 
   //set to 1  if you want to use Steering Motor + Cytron MD30C Driver
   //set to 2  if you want to use Steering Motor + IBT 2  Driver

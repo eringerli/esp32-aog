@@ -139,8 +139,6 @@ void setup( void ) {
 
   Wire.begin( ( int )steerConfig.gpioSDA, ( int )steerConfig.gpioSCL, steerConfig.i2cBusSpeed );
 
-  pinMode( 13, OUTPUT );
-  digitalWrite( 13, LOW );
 
   // add all the partitions for the EEPROM emulation
   EEPROM.add_by_subtype( 0x99 );
@@ -156,6 +154,9 @@ void setup( void ) {
   } else {
     Serial.println( "Not read from EEPROM" );
     writeEeprom();
+  if( steerConfig.apModePin != SteerConfig::Gpio::None ) {
+    pinMode( ( int )steerConfig.apModePin, OUTPUT );
+    digitalWrite( ( int )steerConfig.apModePin, LOW );
   }
 
 #if defined(ESP32)
@@ -185,7 +186,10 @@ void setup( void ) {
     if( WiFi.status() != WL_CONNECTED ) {
       Serial.print( "\n\nCreating hotspot" );
 
-      digitalWrite( 13, LOW );
+      if( steerConfig.apModePin != SteerConfig::Gpio::None ) {
+        digitalWrite( ( int )steerConfig.apModePin, LOW );
+      }
+
       WiFi.mode( WIFI_AP );
       WiFi.softAPConfig( apIP, apIP, IPAddress( 255, 255, 255, 0 ) );
       WiFi.softAP( steerConfig.ssid );
@@ -198,7 +202,9 @@ void setup( void ) {
         timeout--;
       } while( timeout );
     } else {
-      digitalWrite( 13, HIGH );
+      if( steerConfig.apModePin != SteerConfig::Gpio::None ) {
+        digitalWrite( ( int )steerConfig.apModePin, HIGH );
+      }
     }
   }
 
@@ -282,6 +288,13 @@ void setup( void ) {
       control->value.toCharArray( steerConfig.hostname, sizeof( steerConfig.hostname ) );
       setResetButtonToRed();
     } );
+
+    ESPUI.addControl( ControlType::Text, "Pin to show AP mode*",  String( ( int )steerConfig.apModePin ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      steerConfig.apModePin = ( SteerConfig::Gpio )control->value.toInt();
+      setResetButtonToRed();
+    } );
+
     ESPUI.addControl( ControlType::Number, "Port to send from*", String( steerConfig.portSendFrom ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
       steerConfig.portSendFrom = control->value.toInt();
