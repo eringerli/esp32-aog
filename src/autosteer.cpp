@@ -368,16 +368,16 @@ void autosteerWorker100Hz( void* z ) {
 }
 
 void initAutosteer() {
-  if( steerConfig.portSendFrom != 0 ) {
-    initialisation.portSendFrom = steerConfig.portSendFrom;
+  if( steerConfig.aogPortSendFrom != 0 ) {
+    initialisation.portSendFrom = steerConfig.aogPortSendFrom;
   }
 
-  if( steerConfig.portListenTo != 0 ) {
-    initialisation.portListenTo = steerConfig.portListenTo;
+  if( steerConfig.aogPortListenTo != 0 ) {
+    initialisation.portListenTo = steerConfig.aogPortListenTo;
   }
 
-  if( steerConfig.portSendTo != 0 ) {
-    initialisation.portSendTo = steerConfig.portSendTo;
+  if( steerConfig.aogPortSendTo != 0 ) {
+    initialisation.portSendTo = steerConfig.aogPortSendTo;
   }
 
   udpSendFrom.listen( initialisation.portSendFrom );
@@ -579,11 +579,6 @@ void initAutosteer() {
 
   if( steerConfig.gpioSteerswitch != SteerConfig::Gpio::None ) {
     pinMode( ( uint8_t )steerConfig.gpioSteerswitch, INPUT_PULLUP );
-  }
-
-  if( steerConfig.gpioWheelencoderA != SteerConfig::Gpio::None &&
-      steerConfig.gpioWheelencoderB != SteerConfig::Gpio::None ) {
-
   }
 
   xTaskCreate( autosteerWorker100Hz, "autosteerWorker", 4096, NULL, 3, NULL );

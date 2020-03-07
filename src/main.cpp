@@ -293,19 +293,29 @@ void setup( void ) {
       setResetButtonToRed();
     } );
 
-    ESPUI.addControl( ControlType::Number, "Port to send from*", String( steerConfig.portSendFrom ), ControlColor::Wetasphalt, tab,
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Mode*", String( ( int )steerConfig.canBusSpeed ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.canBusSpeed = ( SteerConfig::CanBusSpeed )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "QtOpenGuidance", "0", ControlColor::Alizarin, sel );
+      ESPUI.addControl( ControlType::Option, "AgOpenGps", "1", ControlColor::Alizarin, sel );
+    }
+
+    ESPUI.addControl( ControlType::Number, "Port to send from*", String( steerConfig.aogPortSendFrom ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
-      steerConfig.portSendFrom = control->value.toInt();
+      steerConfig.aogPortSendFrom = control->value.toInt();
       setResetButtonToRed();
     } );
-    ESPUI.addControl( ControlType::Number, "Port to send to*", String( steerConfig.portSendTo ), ControlColor::Wetasphalt, tab,
+    ESPUI.addControl( ControlType::Number, "Port to send to*", String( steerConfig.aogPortSendTo ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
-      steerConfig.portSendTo = control->value.toInt();
+      steerConfig.aogPortSendTo = control->value.toInt();
       setResetButtonToRed();
     } );
-    ESPUI.addControl( ControlType::Number, "Port to listen to*", String( steerConfig.portListenTo ), ControlColor::Wetasphalt, tab,
+    ESPUI.addControl( ControlType::Number, "Port to listen to*", String( steerConfig.aogPortListenTo ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
-      steerConfig.portListenTo = control->value.toInt();
+      steerConfig.aogPortListenTo = control->value.toInt();
       setResetButtonToRed();
     } );
   }
@@ -960,7 +970,16 @@ void setup( void ) {
    * since it is transmitted in cleartext. Just add a username and password,
    * for example begin("ESPUI Control", "username", "password")
    */
-  static String title = "AOG Control :: ";
+  static String title;
+
+  if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+    title = "QOG Control :: ";
+  }
+
+  if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+    title = "AOG Control :: ";
+  }
+
   title += steerConfig.hostname;
   ESPUI.begin( title.c_str() );
 

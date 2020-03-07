@@ -467,13 +467,8 @@ void sensorWorker100HzPoller( void* z ) {
       }
 
       {
-        if( steerConfig.allowWheelAngleCenterAndCountsOverwrite ) {
-          wheelAngleTmp -= steerSettings.wheelAnglePositionZero;
-          wheelAngleTmp /= steerSettings.wheelAngleCountsPerDegree;
-        } else {
-          wheelAngleTmp -= steerConfig.wheelAnglePositionZero;
-          wheelAngleTmp /= steerConfig.wheelAngleCountsPerDegree;
-        }
+        wheelAngleTmp -= steerConfig.wheelAnglePositionZero;
+        wheelAngleTmp /= steerConfig.wheelAngleCountsPerDegree;
 
         steerSetpoints.wheelAngleRaw = wheelAngleTmp;
 

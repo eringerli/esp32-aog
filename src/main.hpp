@@ -96,9 +96,14 @@ struct SteerConfig {
     ADS1115A2A3Differential = 202
   };
 
-  char ssid[24] = "AOG";
-  char password[24] = "aogaogaog";
-  char hostname[24] = "ESP32-AOG";
+  enum class Mode : uint8_t {
+    QtOpenGuidance = 0,
+    AgOpenGps = 1
+  } mode = Mode::QtOpenGuidance;
+
+  char ssid[24] = "QOG";
+  char password[24] = "qogqogqog";
+  char hostname[24] = "ESP32-QOG";
   SteerConfig::Gpio apModePin = SteerConfig::Gpio::None;
 
   //set to 1  if you want to use Steering Motor + Cytron MD30C Driver
@@ -152,7 +157,6 @@ struct SteerConfig {
 
   SteerConfig::AnalogIn wheelAngleInput = SteerConfig::AnalogIn::None;
 
-  bool allowWheelAngleCenterAndCountsOverwrite = false;
   bool invertWheelAngleSensor = false;
   float wheelAngleCountsPerDegree = 118;
   uint16_t wheelAnglePositionZero = 5450;
@@ -164,12 +168,6 @@ struct SteerConfig {
   float wheelAngleTieRodStroke = 210;
   float wheelAngleMinimumAngle = 37;
   float wheelAngleTrackArmLenght = 165;
-
-  bool steeringWheelEncoder = false;
-  SteerConfig::Gpio gpioWheelencoderA = SteerConfig::Gpio::None;
-  SteerConfig::Gpio gpioWheelencoderB = SteerConfig::Gpio::None;
-
-  uint8_t wheelEncoderPulseCountMax = 3;
 
   SteerConfig::Gpio gpioSDA = SteerConfig::Gpio::Esp32Gpio23;
   SteerConfig::Gpio gpioSCL = SteerConfig::Gpio::Esp32Gpio22;
@@ -219,7 +217,6 @@ struct SteerConfig {
   char rtkCorrectionUsername[24] = "gps";
   char rtkCorrectionPassword[24] = "gps";
   char rtkCorrectionMountpoint[24] = "STALL";
-  char rtkCorrectionMountpoint2[24] = "STALL";
 
   char rtkCorrectionNmeaToSend[120] = "";
 
@@ -239,11 +236,14 @@ struct SteerConfig {
 
   uint16_t sendNmeaDataTcpPort = 0;
 
-  uint16_t portSendFrom = 5577;
-  uint16_t portListenTo = 8888;
-  uint16_t portSendTo = 9999;
+  uint16_t aogPortSendFrom = 5577;
+  uint16_t aogPortListenTo = 8888;
+  uint16_t aogPortSendTo = 9999;
 
-  bool retainWifiSettings = false;
+  uint16_t qogPortListenTo = 1337;
+  uint16_t qogPortSendTo = 1338;
+
+  bool retainWifiSettings = true;
 
 //   char dummy[100];
 
