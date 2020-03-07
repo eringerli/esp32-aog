@@ -29,7 +29,6 @@
 
 #include <AsyncUDP.h>
 
-#include <EEPROM32_Rotate.h>
 #include <ESPUI.h>
 
 #include <Adafruit_MMA8451.h>
@@ -305,15 +304,6 @@ extern Initialisation initialisation;
 // Global Data
 ///////////////////////////////////////////////////////////////////////////
 
-enum class EepromAddresses : uint16_t {
-  CRC = 0,
-  Validator = 5,
-  SizeOfConfig = 7,
-  Bno055CalibrationData = 9,
-  Fxos8700Fxas21002CalibrationData = Bno055CalibrationData + sizeof( bno055CalibrationData ),
-  SteerConfig = Fxos8700Fxas21002CalibrationData + sizeof( fxos8700Fxas21002CalibrationData )
-};
-
 struct SteerSettings {
   float Ko = 0.0f;  //overall gain
   float Kp = 0.0f;  //proportional gain
@@ -379,7 +369,6 @@ extern SteerCanData steerCanData;
 ///////////////////////////////////////////////////////////////////////////
 
 extern ESPUIClass ESPUI;
-extern EEPROM32_Rotate EEPROM;
 
 // extern AsyncUDP udpLocalPort;
 // extern AsyncUDP udpRemotePort;
@@ -400,7 +389,6 @@ class TCritSect {
     }
 };
 
-
 ///////////////////////////////////////////////////////////////////////////
 // Threads
 ///////////////////////////////////////////////////////////////////////////
@@ -410,7 +398,6 @@ class TCritSect {
 // Helper Functions
 ///////////////////////////////////////////////////////////////////////////
 
-extern void writeEeprom();
 extern void initIdleStats();
 extern void initSensors();
 extern void calculateMountingCorrection();

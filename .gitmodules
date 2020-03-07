@@ -13,9 +13,6 @@
 [submodule "lib/AutoPID"]
 	path = lib/AutoPID
 	url = https://github.com/eringerli/AutoPID.git
-[submodule "lib/eeprom32_rotate"]
-	path = lib/eeprom32_rotate
-	url = https://github.com/xoseperez/eeprom32_rotate.git
 [submodule "lib/ESPAsyncWebServer"]
 	path = lib/ESPAsyncWebServer
 	url = https://github.com/me-no-dev/ESPAsyncWebServer.git

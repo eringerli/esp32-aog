@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "settings.hpp"
 #include "main.hpp"
 
 #if defined(ESP32)
@@ -33,7 +34,6 @@
 
 #include <DNSServer.h>
 #include <ESPUI.h>
-#include <EEPROM32_Rotate.h>
 
 ///////////////////////////////////////////////////////////////////////////
 // global data
@@ -67,8 +67,6 @@ uint16_t labelStatusNtrip;
 ///////////////////////////////////////////////////////////////////////////
 // external Libraries
 ///////////////////////////////////////////////////////////////////////////
-EEPROM32_Rotate EEPROM;
-
 ESPUIClass ESPUI( Verbosity::Quiet );
 DNSServer dnsServer;
 
@@ -80,13 +78,7 @@ void setResetButtonToRed() {
   ESPUI.updateControlAsync( buttonReset );
 }
 
-void writeEeprom() {
-  EEPROM.writeUChar( ( uint16_t )EepromAddresses::Validator, 0 );
-  EEPROM.writeUShort( ( uint16_t )EepromAddresses::SizeOfConfig, ( uint16_t )sizeof( SteerConfig ) );
-  EEPROM.put( ( uint16_t )EepromAddresses::Bno055CalibrationData, bno055CalibrationData );
-  EEPROM.put( ( uint16_t )EepromAddresses::Fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationData );
-  EEPROM.put( ( uint16_t )EepromAddresses::SteerConfig, steerConfig );
-  EEPROM.commit();
+void saveConfigToSPIFFS() {
 }
 
 void addGpioOutput( uint16_t parent ) {
@@ -139,21 +131,13 @@ void setup( void ) {
 
   Wire.begin( ( int )steerConfig.gpioSDA, ( int )steerConfig.gpioSCL, steerConfig.i2cBusSpeed );
 
+  if( !SPIFFS.begin( true ) ) {
+    Serial.println( "SPIFFS Mount Failed" );
+    return;
+  }
 
-  // add all the partitions for the EEPROM emulation
-  EEPROM.add_by_subtype( 0x99 );
-  EEPROM.begin( 4096 );
+  loadSavedConfig();
 
-  // restore the settings from EEPROM
-  if( ( EEPROM.readUChar( ( uint16_t )EepromAddresses::Validator ) != 0xff ) &&
-      ( EEPROM.readUShort( ( uint16_t )EepromAddresses::SizeOfConfig ) == sizeof( SteerConfig ) ) ) {
-    Serial.println( "Read from EEPROM" );
-    EEPROM.get( ( uint16_t )EepromAddresses::Bno055CalibrationData, bno055CalibrationData );
-    EEPROM.get( ( uint16_t )EepromAddresses::Fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationData );
-    EEPROM.get( ( uint16_t )EepromAddresses::SteerConfig, steerConfig );
-  } else {
-    Serial.println( "Not read from EEPROM" );
-    writeEeprom();
   if( steerConfig.apModePin != SteerConfig::Gpio::None ) {
     pinMode( ( int )steerConfig.apModePin, OUTPUT );
     digitalWrite( ( int )steerConfig.apModePin, LOW );
@@ -227,14 +211,14 @@ void setup( void ) {
   buttonReset = ESPUI.addControl( ControlType::Button, "Store the Settings", "Apply", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
     if( id == B_UP ) {
-      writeEeprom();
+      saveConfig();
     }
   } );
 
   buttonReset = ESPUI.addControl( ControlType::Button, "If this turn red, you have to", "Apply & Reboot", ControlColor::Emerald, Control::noParent,
   []( Control * control, int id ) {
     if( id == B_UP ) {
-      writeEeprom();
+      saveConfig();
       ESP.restart();
     }
   } );
