@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#pragma once
+
 #include <WiFi.h>
 #include <WiFiMulti.h>
 
@@ -34,9 +36,6 @@
 #include <Adafruit_BNO055.h>
 
 #include "average.hpp"
-
-#ifndef MAIN_HPP
-#define MAIN_HPP
 
 extern uint16_t labelLoad;
 extern uint16_t labelOrientation;
@@ -422,5 +421,3 @@ extern void calculateMountingCorrection();
 extern void initRtkCorrection();
 extern void initCan();
 extern void initAutosteer();
-
-#endif

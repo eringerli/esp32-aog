@@ -25,8 +25,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AVERAGE_H
-#define AVERAGE_H
+#pragma once
 
 #include <stdint.h>
 #include <string.h>
@@ -76,5 +75,3 @@ class Average {
       memset( Buffer, 0, Size * sizeof( T ) );
     }
 };
-
-#endif

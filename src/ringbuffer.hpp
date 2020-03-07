@@ -25,8 +25,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef RINGBUFFER_H
-#define RINGBUFFER_H
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
@@ -144,5 +143,3 @@ class RingBuffer {
     }
 
 };
-
-#endif
