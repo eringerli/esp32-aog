@@ -151,10 +151,11 @@ void setup( void ) {
 
 // try to connect to existing network
   WiFi.begin( steerConfig.ssid, steerConfig.password );
-  Serial.print( "\n\nTry to connect to existing network " );
+  Serial.print( "\n\nTry to connect to existing network \"" );
   Serial.print( steerConfig.ssid );
-  Serial.print( " with password " );
+  Serial.print( "\" with password \"" );
   Serial.print( steerConfig.password );
+  Serial.print( "\"" );
 
   {
     uint8_t timeout = 5;
@@ -219,9 +220,12 @@ void setup( void ) {
   []( Control * control, int id ) {
     if( id == B_UP ) {
       saveConfig();
+      SPIFFS.end();
       ESP.restart();
     }
   } );
+
+  uint16_t tabConfigurations;
 
   // Status Tab
   {
@@ -255,6 +259,16 @@ void setup( void ) {
   {
     uint16_t tab = ESPUI.addControl( ControlType::Tab, "Network", "Network" );
 
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Mode*", String( ( int )steerConfig.canBusSpeed ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.canBusSpeed = ( SteerConfig::CanBusSpeed )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "QtOpenGuidance", "0", ControlColor::Alizarin, sel );
+      ESPUI.addControl( ControlType::Option, "AgOpenGps", "1", ControlColor::Alizarin, sel );
+    }
+
     ESPUI.addControl( ControlType::Text, "SSID*", String( steerConfig.ssid ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
       control->value.toCharArray( steerConfig.ssid, sizeof( steerConfig.ssid ) );
@@ -276,16 +290,6 @@ void setup( void ) {
       steerConfig.apModePin = ( SteerConfig::Gpio )control->value.toInt();
       setResetButtonToRed();
     } );
-
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Mode*", String( ( int )steerConfig.canBusSpeed ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.canBusSpeed = ( SteerConfig::CanBusSpeed )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "QtOpenGuidance", "0", ControlColor::Alizarin, sel );
-      ESPUI.addControl( ControlType::Option, "AgOpenGps", "1", ControlColor::Alizarin, sel );
-    }
 
     ESPUI.addControl( ControlType::Number, "Port to send from*", String( steerConfig.aogPortSendFrom ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
@@ -905,9 +909,13 @@ void setup( void ) {
 
   // Default Configurations Tab
   {
-    uint16_t tab     = ESPUI.addControl( ControlType::Tab, "Configurations", "Configurations" );
+    uint16_t tab = ESPUI.addControl( ControlType::Tab, "Configurations", "Configurations" );
     ESPUI.addControl( ControlType::Label, "Attention:", "These Buttons here reset the whole config. This affects the WIFI too, if not configured otherwise below. You have to press \"Apply & Reboot\" above to actualy store them.", ControlColor::Carrot, tab );
 
+    ESPUI.addControl( ControlType::Label, "Download the config:", "<a href='config.json'>Configuration</a>", ControlColor::Carrot, tab );
+
+    ESPUI.addControl( ControlType::Label, "Upload the config:", "<form method='POST' action='/upload' enctype='multipart/form-data'><input name='f' type='file'><input type='submit'></form>", ControlColor::Carrot, tab );
+//  onchange='this.form.submit()'
     {
       ESPUI.addControl( ControlType::Switcher, "Retain WIFI settings", steerConfig.retainWifiSettings ? "1" : "0", ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
@@ -936,6 +944,8 @@ void setup( void ) {
         setResetButtonToRed();
       } );
     }
+
+    tabConfigurations = tab;
 
   }
 
@@ -966,6 +976,33 @@ void setup( void ) {
 
   title += steerConfig.hostname;
   ESPUI.begin( title.c_str() );
+
+  ESPUI.getServer()->on( "/config.json", HTTP_GET, []( AsyncWebServerRequest * request ) {
+    request->send( SPIFFS, "/config.json", "application/json", true );
+  } );
+
+  // upload a file to /upload
+  ESPUI.getServer()->on( "/upload", HTTP_POST, []( AsyncWebServerRequest * request ) {
+    request->send( 200 );
+  }, [tabConfigurations]( AsyncWebServerRequest * request, String filename, size_t index, uint8_t* data, size_t len, bool final ) {
+    if( !index ) {
+      request->_tempFile = SPIFFS.open( "/config.json", "w" );
+    }
+
+    if( request->_tempFile ) {
+      if( len ) {
+        request->_tempFile.write( data, len );
+      }
+
+      if( final ) {
+        request->_tempFile.close();
+        setResetButtonToRed();
+        String str( "/#tab" );
+        str += tabConfigurations;
+        request->redirect( str );
+      }
+    }
+  } );
 
   initIdleStats();
 

@@ -46,14 +46,22 @@ json loadJsonFromFile( const char* fileName ) {
 
     if( file ) {
       std::vector<uint8_t> data;
-      data.reserve( file.size() );
+      data.resize( file.size() );
 
       file.read( data.data(), file.size() );
 
-      j = json::parse( data, nullptr, false );
-    }
+      try {
+        j = json::parse( data/*, nullptr, false*/ );
+      } catch( json::exception& e ) {
+        // output exception information
+        Serial.print( "message: " );
+        Serial.println( e.what() );
+        Serial.print( "exception id: " );
+        Serial.println( e.id );
+      }
 
-    file.close();
+      file.close();
+    }
   }
 
   return j;
@@ -161,111 +169,122 @@ json parseSteerConfigToJson( const SteerConfig& config ) {
 }
 
 void parseJsonToSteerConfig( json& j, SteerConfig& config ) {
-//   {
-//     std::string str = j.value("/wifi/ssid"_json_pointer, steerConfigDefaults.ssid);
-//     memcpy( config.ssid, str.c_str(), std::min( str.size(), sizeof( config.ssid ) ) );
-//   }
-//   {
-//     std::string str = j.value("/wifi/password"_json_pointer, steerConfigDefaults.password);
-//     memcpy( config.password, str.c_str(), std::min( str.size(), sizeof( config.password ) ) );
-//   }
-//   {
-//     std::string str = j.value("/wifi/hostname"_json_pointer, steerConfigDefaults.hostname);
-//     memcpy( config.hostname, str.c_str(), std::min( str.size(), sizeof( config.hostname ) ) );
-//   }
-  config.apModePin = j.value( "/wifi/apModePin"_json_pointer, steerConfigDefaults.apModePin );
-//   config.retainWifiSettings=j.value("/wifi/retainSettings"_json_pointer, steerConfigDefaults.retainWifiSettings);
-//
-//   config.outputType=j.value("/output/type"_json_pointer, steerConfigDefaults.outputType);
-//   config.pwmFrequency=j.value("/output/pwmFrequency"_json_pointer, steerConfigDefaults.pwmFrequency);
-//   config.steeringPidMinPwm=j.value("/output/minPWM"_json_pointer, steerConfigDefaults.steeringPidMinPwm);
-//   config.gpioPwm=j.value("/output/gpioPwm"_json_pointer, steerConfigDefaults.gpioPwm);
-//   config.gpioDir=j.value("/output/gpioDir"_json_pointer, steerConfigDefaults.gpioDir);
-//   config.gpioEn=j.value("/output/gpioEn"_json_pointer, steerConfigDefaults.gpioEn);
-//
-//   config.steeringPidKp=j.value("/PID/P"_json_pointer, steerConfigDefaults.steeringPidKp);
-//   config.steeringPidKi=j.value("/PID/I"_json_pointer, steerConfigDefaults.steeringPidKi);
-//   config.steeringPidKd=j.value("/PID/D"_json_pointer, steerConfigDefaults.steeringPidKd);
-//   config.steeringPidAutoBangOnFactor=j.value("/PID/autoBangOnFactor"_json_pointer, steerConfigDefaults.steeringPidAutoBangOnFactor);
-//   config.steeringPidBangOn=j.value("/PID/bangOn"_json_pointer, steerConfigDefaults.steeringPidBangOn);
-//   config.steeringPidBangOff=j.value("/PID/bangOff"_json_pointer, steerConfigDefaults.steeringPidBangOff);
-//
-//   config.workswitchType=j.value("/workswitch/workswitchType"_json_pointer, steerConfigDefaults.workswitchType);
-//   config.gpioWorkswitch=j.value("/workswitch/gpioWorkswitch"_json_pointer, steerConfigDefaults.gpioWorkswitch);
-//   config.gpioSteerswitch=j.value("/workswitch/gpioSteerswitch"_json_pointer, steerConfigDefaults.gpioSteerswitch);
-//   config.autoRecogniseSteerGpioAsSwitchOrButton=j.value("/workswitch/msAutoRecogniseSteerGpioAsSwitch"_json_pointer, steerConfigDefaults.autoRecogniseSteerGpioAsSwitchOrButton);
-//   config.workswitchActiveLow=j.value("/workswitch/workswitchActiveLow"_json_pointer, steerConfigDefaults.workswitchActiveLow);
-//   config.steerswitchActiveLow=j.value("/workswitch/steerswitchActiveLow"_json_pointer, steerConfigDefaults.steerswitchActiveLow);
-//
-//   config.wheelAngleInput=j.value("/wheelangle/input"_json_pointer, steerConfigDefaults.wheelAngleInput);
-//   config.wheelAngleSensorType=j.value("/wheelangle/sensorType"_json_pointer, steerConfigDefaults.wheelAngleSensorType);
-//   config.invertWheelAngleSensor=j.value("/wheelangle/invert"_json_pointer, steerConfigDefaults.invertWheelAngleSensor);
-//   config.wheelAngleCountsPerDegree=j.value("/wheelangle/countsPerDegree"_json_pointer, steerConfigDefaults.wheelAngleCountsPerDegree);
-//   config.wheelAnglePositionZero=j.value("/wheelangle/positionZero"_json_pointer, steerConfigDefaults.wheelAnglePositionZero);
-//
-//   config.wheelAngleFirstArmLenght=j.value("/wheelangle/tierod/FirstArmLenght"_json_pointer, steerConfigDefaults.wheelAngleFirstArmLenght);
-//   config.wheelAngleSecondArmLenght=j.value("/wheelangle/tierod/SecondArmLenght"_json_pointer, steerConfigDefaults.wheelAngleSecondArmLenght);
-//   config.wheelAngleTieRodStroke=j.value("/wheelangle/tierod/TieRodStroke"_json_pointer, steerConfigDefaults.wheelAngleTieRodStroke);
-//   config.wheelAngleMinimumAngle=j.value("/wheelangle/tierod/MinimumAngle"_json_pointer, steerConfigDefaults.wheelAngleMinimumAngle);
-//   config.wheelAngleTrackArmLenght=j.value("/wheelangle/tierod/TrackArmLenght"_json_pointer, steerConfigDefaults.wheelAngleTrackArmLenght);
-//
-//   config.gpioSDA=j.value("/i2c/sda"_json_pointer, steerConfigDefaults.gpioSDA);
-//   config.gpioSCL=j.value("/i2c/scl"_json_pointer, steerConfigDefaults.gpioSCL);
-//   config.i2cBusSpeed=j.value("/i2c/speed"_json_pointer, steerConfigDefaults.i2cBusSpeed);
-//
-//   config.imuType=j.value("/imu/type"_json_pointer, steerConfigDefaults.imuType);
-//
-//   config.inclinoType=j.value("/inclinomeer/type"_json_pointer, steerConfigDefaults.inclinoType);
-//   config.invertRoll=j.value("/inclinomeer/invertRoll"_json_pointer, steerConfigDefaults.invertRoll);
-//
-//   config.mountCorrectionImuRoll=j.value("/mountingCorrection/roll"_json_pointer, steerConfigDefaults.mountCorrectionImuRoll);
-//   config.mountCorrectionImuPitch=j.value("/mountingCorrection/pitch"_json_pointer, steerConfigDefaults.mountCorrectionImuPitch);
-//   config.mountCorrectionImuYaw=j.value("/mountingCorrection/yaw"_json_pointer, steerConfigDefaults.mountCorrectionImuYaw);
-//
-//   config.canBusEnabled=j.value("/canBus/enabled"_json_pointer, steerConfigDefaults.canBusEnabled);
-//   config.canBusRx=j.value("/canBus/rxPin"_json_pointer, steerConfigDefaults.canBusRx);
-//   config.canBusTx=j.value("/canBus/txPin"_json_pointer, steerConfigDefaults.canBusTx);
-//   config.canBusSpeed=j.value("/canBus/speed"_json_pointer, steerConfigDefaults.canBusSpeed);
-//   config.canBusHitchThreshold=j.value("/canBus/hitchThreshold"_json_pointer, steerConfigDefaults.canBusHitchThreshold);
-//   config.canBusHitchThresholdHysteresis=j.value("/canBus/hitchThresholdHysteresis"_json_pointer, steerConfigDefaults.canBusHitchThresholdHysteresis);
-//   config.canBusRpmThreshold=j.value("/canBus/rpmThreshold"_json_pointer, steerConfigDefaults.canBusRpmThreshold);
-//   config.canBusRpmThresholdHysteresis=j.value("/canBus/rpmThresholdHysteresis"_json_pointer, steerConfigDefaults.canBusRpmThresholdHysteresis);
-//
-//   config.rtkCorrectionType=j.value("/gps/correctionSource"_json_pointer, steerConfigDefaults.rtkCorrectionType);
-//   {
-//     std::string str = j.value("/gps/ntrip/server"_json_pointer, steerConfigDefaults.rtkCorrectionServer);
-//     memcpy( config.rtkCorrectionServer, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionServer ) ) );
-//   }
-//   config.rtkCorrectionPort=j.value("/gps/ntrip/port"_json_pointer, steerConfigDefaults.rtkCorrectionPort);
-//   {
-//     std::string str = j.value("/gps/ntrip/username"_json_pointer, steerConfigDefaults.rtkCorrectionUsername);
-//     memcpy( config.rtkCorrectionUsername, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionUsername ) ) );
-//   }
-//   {
-//     std::string str = j.value("/gps/ntrip/password"_json_pointer, steerConfigDefaults.rtkCorrectionPassword);
-//     memcpy( config.rtkCorrectionPassword, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionPassword ) ) );
-//   }
-//   {
-//     std::string str = j.value("/gps/ntrip/mountpoint"_json_pointer, steerConfigDefaults.rtkCorrectionMountpoint);
-//     memcpy( config.rtkCorrectionMountpoint, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionMountpoint ) ) );
-//   }
-//   {
-//     std::string str = j.value("/gps/ntrip/NMEAToSend"_json_pointer, steerConfigDefaults.rtkCorrectionNmeaToSend);
-//     memcpy( config.rtkCorrectionNmeaToSend, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionNmeaToSend ) ) );
-//   }
-//
-//   config.ntripPositionSendIntervall=j.value("/gps/ntrip/intervalSendPosition"_json_pointer, steerConfigDefaults.ntripPositionSendIntervall);
-//   config.rtkCorrectionBaudrate=j.value("/gps/baudrate"_json_pointer, steerConfigDefaults.rtkCorrectionBaudrate);
-//   config.sendNmeaDataTo=j.value("/gps/outputTo"_json_pointer, steerConfigDefaults.sendNmeaDataTo);
-//   config.sendNmeaDataTcpPort=j.value("/gps/tcpPort"_json_pointer, steerConfigDefaults.sendNmeaDataTcpPort);
-//
-//   config.mode=j.value("/connection/type"_json_pointer, steerConfigDefaults.mode);
-//   config.aogPortSendFrom=j.value("/connection/aog/sendFrom"_json_pointer, steerConfigDefaults.aogPortSendFrom);
-//   config.aogPortListenTo=j.value("/connection/aog/listenTo"_json_pointer, steerConfigDefaults.aogPortListenTo);
-//   config.aogPortSendTo=j.value("/connection/aog/sendTo"_json_pointer, steerConfigDefaults.aogPortSendTo);
-//
-//   config.qogPortListenTo=j.value("/connection/qog/listenTo"_json_pointer, steerConfigDefaults.qogPortListenTo);
-//   config.qogPortSendTo=j.value("/connection/qog/sendTo"_json_pointer, steerConfigDefaults.qogPortSendTo);
+  if( j.is_object() ) {
+    try {
+      {
+        std::string str = j.value( "/wifi/ssid"_json_pointer, steerConfigDefaults.ssid );
+        memcpy( config.ssid, str.c_str(), std::min( str.size(), sizeof( config.ssid ) ) );
+      }
+      {
+        std::string str = j.value( "/wifi/password"_json_pointer, steerConfigDefaults.password );
+        memcpy( config.password, str.c_str(), std::min( str.size(), sizeof( config.password ) ) );
+      }
+      {
+        std::string str = j.value( "/wifi/hostname"_json_pointer, steerConfigDefaults.hostname );
+        memcpy( config.hostname, str.c_str(), std::min( str.size(), sizeof( config.hostname ) ) );
+      }
+      config.apModePin = j.value( "/wifi/apModePin"_json_pointer, steerConfigDefaults.apModePin );
+      config.retainWifiSettings = j.value( "/wifi/retainSettings"_json_pointer, steerConfigDefaults.retainWifiSettings );
+
+      config.outputType = j.value( "/output/type"_json_pointer, steerConfigDefaults.outputType );
+      config.pwmFrequency = j.value( "/output/pwmFrequency"_json_pointer, steerConfigDefaults.pwmFrequency );
+      config.steeringPidMinPwm = j.value( "/output/minPWM"_json_pointer, steerConfigDefaults.steeringPidMinPwm );
+      config.gpioPwm = j.value( "/output/gpioPwm"_json_pointer, steerConfigDefaults.gpioPwm );
+      config.gpioDir = j.value( "/output/gpioDir"_json_pointer, steerConfigDefaults.gpioDir );
+      config.gpioEn = j.value( "/output/gpioEn"_json_pointer, steerConfigDefaults.gpioEn );
+
+      config.steeringPidKp = j.value( "/PID/P"_json_pointer, steerConfigDefaults.steeringPidKp );
+      config.steeringPidKi = j.value( "/PID/I"_json_pointer, steerConfigDefaults.steeringPidKi );
+      config.steeringPidKd = j.value( "/PID/D"_json_pointer, steerConfigDefaults.steeringPidKd );
+      config.steeringPidAutoBangOnFactor = j.value( "/PID/autoBangOnFactor"_json_pointer, steerConfigDefaults.steeringPidAutoBangOnFactor );
+      config.steeringPidBangOn = j.value( "/PID/bangOn"_json_pointer, steerConfigDefaults.steeringPidBangOn );
+      config.steeringPidBangOff = j.value( "/PID/bangOff"_json_pointer, steerConfigDefaults.steeringPidBangOff );
+
+      config.workswitchType = j.value( "/workswitch/workswitchType"_json_pointer, steerConfigDefaults.workswitchType );
+      config.gpioWorkswitch = j.value( "/workswitch/gpioWorkswitch"_json_pointer, steerConfigDefaults.gpioWorkswitch );
+      config.gpioSteerswitch = j.value( "/workswitch/gpioSteerswitch"_json_pointer, steerConfigDefaults.gpioSteerswitch );
+      config.autoRecogniseSteerGpioAsSwitchOrButton = j.value( "/workswitch/msAutoRecogniseSteerGpioAsSwitch"_json_pointer, steerConfigDefaults.autoRecogniseSteerGpioAsSwitchOrButton );
+      config.workswitchActiveLow = j.value( "/workswitch/workswitchActiveLow"_json_pointer, steerConfigDefaults.workswitchActiveLow );
+      config.steerswitchActiveLow = j.value( "/workswitch/steerswitchActiveLow"_json_pointer, steerConfigDefaults.steerswitchActiveLow );
+
+      config.wheelAngleInput = j.value( "/wheelangle/input"_json_pointer, steerConfigDefaults.wheelAngleInput );
+      config.wheelAngleSensorType = j.value( "/wheelangle/sensorType"_json_pointer, steerConfigDefaults.wheelAngleSensorType );
+      config.invertWheelAngleSensor = j.value( "/wheelangle/invert"_json_pointer, steerConfigDefaults.invertWheelAngleSensor );
+      config.wheelAngleCountsPerDegree = j.value( "/wheelangle/countsPerDegree"_json_pointer, steerConfigDefaults.wheelAngleCountsPerDegree );
+      config.wheelAnglePositionZero = j.value( "/wheelangle/positionZero"_json_pointer, steerConfigDefaults.wheelAnglePositionZero );
+
+      config.wheelAngleFirstArmLenght = j.value( "/wheelangle/tierod/FirstArmLenght"_json_pointer, steerConfigDefaults.wheelAngleFirstArmLenght );
+      config.wheelAngleSecondArmLenght = j.value( "/wheelangle/tierod/SecondArmLenght"_json_pointer, steerConfigDefaults.wheelAngleSecondArmLenght );
+      config.wheelAngleTieRodStroke = j.value( "/wheelangle/tierod/TieRodStroke"_json_pointer, steerConfigDefaults.wheelAngleTieRodStroke );
+      config.wheelAngleMinimumAngle = j.value( "/wheelangle/tierod/MinimumAngle"_json_pointer, steerConfigDefaults.wheelAngleMinimumAngle );
+      config.wheelAngleTrackArmLenght = j.value( "/wheelangle/tierod/TrackArmLenght"_json_pointer, steerConfigDefaults.wheelAngleTrackArmLenght );
+
+      config.gpioSDA = j.value( "/i2c/sda"_json_pointer, steerConfigDefaults.gpioSDA );
+      config.gpioSCL = j.value( "/i2c/scl"_json_pointer, steerConfigDefaults.gpioSCL );
+      config.i2cBusSpeed = j.value( "/i2c/speed"_json_pointer, steerConfigDefaults.i2cBusSpeed );
+
+      config.imuType = j.value( "/imu/type"_json_pointer, steerConfigDefaults.imuType );
+
+      config.inclinoType = j.value( "/inclinomeer/type"_json_pointer, steerConfigDefaults.inclinoType );
+      config.invertRoll = j.value( "/inclinomeer/invertRoll"_json_pointer, steerConfigDefaults.invertRoll );
+
+      config.mountCorrectionImuRoll = j.value( "/mountingCorrection/roll"_json_pointer, steerConfigDefaults.mountCorrectionImuRoll );
+      config.mountCorrectionImuPitch = j.value( "/mountingCorrection/pitch"_json_pointer, steerConfigDefaults.mountCorrectionImuPitch );
+      config.mountCorrectionImuYaw = j.value( "/mountingCorrection/yaw"_json_pointer, steerConfigDefaults.mountCorrectionImuYaw );
+
+      config.canBusEnabled = j.value( "/canBus/enabled"_json_pointer, steerConfigDefaults.canBusEnabled );
+      config.canBusRx = j.value( "/canBus/rxPin"_json_pointer, steerConfigDefaults.canBusRx );
+      config.canBusTx = j.value( "/canBus/txPin"_json_pointer, steerConfigDefaults.canBusTx );
+      config.canBusSpeed = j.value( "/canBus/speed"_json_pointer, steerConfigDefaults.canBusSpeed );
+      config.canBusHitchThreshold = j.value( "/canBus/hitchThreshold"_json_pointer, steerConfigDefaults.canBusHitchThreshold );
+      config.canBusHitchThresholdHysteresis = j.value( "/canBus/hitchThresholdHysteresis"_json_pointer, steerConfigDefaults.canBusHitchThresholdHysteresis );
+      config.canBusRpmThreshold = j.value( "/canBus/rpmThreshold"_json_pointer, steerConfigDefaults.canBusRpmThreshold );
+      config.canBusRpmThresholdHysteresis = j.value( "/canBus/rpmThresholdHysteresis"_json_pointer, steerConfigDefaults.canBusRpmThresholdHysteresis );
+
+      config.rtkCorrectionType = j.value( "/gps/correctionSource"_json_pointer, steerConfigDefaults.rtkCorrectionType );
+      {
+        std::string str = j.value( "/gps/ntrip/server"_json_pointer, steerConfigDefaults.rtkCorrectionServer );
+        memcpy( config.rtkCorrectionServer, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionServer ) ) );
+      }
+      config.rtkCorrectionPort = j.value( "/gps/ntrip/port"_json_pointer, steerConfigDefaults.rtkCorrectionPort );
+      {
+        std::string str = j.value( "/gps/ntrip/username"_json_pointer, steerConfigDefaults.rtkCorrectionUsername );
+        memcpy( config.rtkCorrectionUsername, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionUsername ) ) );
+      }
+      {
+        std::string str = j.value( "/gps/ntrip/password"_json_pointer, steerConfigDefaults.rtkCorrectionPassword );
+        memcpy( config.rtkCorrectionPassword, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionPassword ) ) );
+      }
+      {
+        std::string str = j.value( "/gps/ntrip/mountpoint"_json_pointer, steerConfigDefaults.rtkCorrectionMountpoint );
+        memcpy( config.rtkCorrectionMountpoint, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionMountpoint ) ) );
+      }
+      {
+        std::string str = j.value( "/gps/ntrip/NMEAToSend"_json_pointer, steerConfigDefaults.rtkCorrectionNmeaToSend );
+        memcpy( config.rtkCorrectionNmeaToSend, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionNmeaToSend ) ) );
+      }
+
+      config.ntripPositionSendIntervall = j.value( "/gps/ntrip/intervalSendPosition"_json_pointer, steerConfigDefaults.ntripPositionSendIntervall );
+      config.rtkCorrectionBaudrate = j.value( "/gps/baudrate"_json_pointer, steerConfigDefaults.rtkCorrectionBaudrate );
+      config.sendNmeaDataTo = j.value( "/gps/outputTo"_json_pointer, steerConfigDefaults.sendNmeaDataTo );
+      config.sendNmeaDataTcpPort = j.value( "/gps/tcpPort"_json_pointer, steerConfigDefaults.sendNmeaDataTcpPort );
+
+      config.mode = j.value( "/connection/type"_json_pointer, steerConfigDefaults.mode );
+      config.aogPortSendFrom = j.value( "/connection/aog/sendFrom"_json_pointer, steerConfigDefaults.aogPortSendFrom );
+      config.aogPortListenTo = j.value( "/connection/aog/listenTo"_json_pointer, steerConfigDefaults.aogPortListenTo );
+      config.aogPortSendTo = j.value( "/connection/aog/sendTo"_json_pointer, steerConfigDefaults.aogPortSendTo );
+
+      config.qogPortListenTo = j.value( "/connection/qog/listenTo"_json_pointer, steerConfigDefaults.qogPortListenTo );
+      config.qogPortSendTo = j.value( "/connection/qog/sendTo"_json_pointer, steerConfigDefaults.qogPortSendTo );
+
+    } catch( json::exception& e ) {
+      // output exception information
+      Serial.print( "message: " );
+      Serial.println( e.what() );
+      Serial.print( "exception id: " );
+      Serial.println( e.id );
+    }
+  }
 }
 
 extern void parseJsonToFxos8700Fxas21002Calibration( json& json, Fxos8700Fxas21002CalibrationData& calibration );
