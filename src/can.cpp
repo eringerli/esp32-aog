@@ -139,6 +139,6 @@ void initCan() {
     // Init CAN Module
     ESP32Can.CANInit();
 
-    xTaskCreate( canWorker10Hz, "canWorker", 4096, NULL, 5, NULL );
+    xTaskCreate( canWorker10Hz, "canWorker", 1024, NULL, 5, NULL );
   }
 }

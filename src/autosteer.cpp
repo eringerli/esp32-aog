@@ -581,7 +581,7 @@ void initAutosteer() {
     pinMode( ( uint8_t )steerConfig.gpioSteerswitch, INPUT_PULLUP );
   }
 
-  xTaskCreate( autosteerWorker100Hz, "autosteerWorker", 4096, NULL, 3, NULL );
+  xTaskCreate( autosteerWorker100Hz, "autosteerWorker", 2048, NULL, 3, NULL );
 }
 
 

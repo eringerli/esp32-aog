@@ -709,10 +709,10 @@ void initSensors() {
   }
 
   if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
-    xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 4096, NULL, 5, NULL );
+    xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 2048, NULL, 5, NULL );
   }
 
-  xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 8192 * 2, NULL, 6, NULL );
+  xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 4096, NULL, 6, NULL );
 }
 
 

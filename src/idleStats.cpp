@@ -96,5 +96,5 @@ void idleStatsWorker( void* z ) {
 void initIdleStats() {
   esp_register_freertos_idle_hook_for_cpu( core0IdleWorker, 0 );
   esp_register_freertos_idle_hook_for_cpu( core1IdleWorker, 1 );
-  xTaskCreate( idleStatsWorker, "IdleStats", 4096, NULL, 10, NULL );
+  xTaskCreate( idleStatsWorker, "IdleStats", 2048, NULL, 10, NULL );
 }

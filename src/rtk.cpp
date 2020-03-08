@@ -407,8 +407,8 @@ void initRtkCorrection() {
   Serial2.begin( steerConfig.rtkCorrectionBaudrate );
 
   if( steerConfig.rtkCorrectionType == SteerConfig::RtkCorrectionType::Ntrip ) {
-    xTaskCreate( ntripWorker, "ntripWorker", 4096, NULL, 8, NULL );
+    xTaskCreate( ntripWorker, "ntripWorker", 1024, NULL, 8, NULL );
   }
 
-  xTaskCreate( nmeaWorker, "nmeaWorker", 4096, NULL, 6, NULL );
+  xTaskCreate( nmeaWorker, "nmeaWorker", 1024, NULL, 6, NULL );
 }
