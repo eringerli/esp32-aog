@@ -260,9 +260,9 @@ void setup( void ) {
     uint16_t tab = ESPUI.addControl( ControlType::Tab, "Network", "Network" );
 
     {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Mode*", String( ( int )steerConfig.canBusSpeed ), ControlColor::Wetasphalt, tab,
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Mode*", String( ( int )steerConfig.mode ), ControlColor::Wetasphalt, tab,
       []( Control * control, int id ) {
-        steerConfig.canBusSpeed = ( SteerConfig::CanBusSpeed )control->value.toInt();
+        steerConfig.mode = ( SteerConfig::Mode )control->value.toInt();
         setResetButtonToRed();
       } );
       ESPUI.addControl( ControlType::Option, "QtOpenGuidance", "0", ControlColor::Alizarin, sel );
@@ -291,11 +291,14 @@ void setup( void ) {
       setResetButtonToRed();
     } );
 
-    ESPUI.addControl( ControlType::Number, "Port to send from*", String( steerConfig.aogPortSendFrom ), ControlColor::Wetasphalt, tab,
-    []( Control * control, int id ) {
-      steerConfig.aogPortSendFrom = control->value.toInt();
-      setResetButtonToRed();
-    } );
+    if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+      ESPUI.addControl( ControlType::Number, "Port to send from*", String( steerConfig.aogPortSendFrom ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.aogPortSendFrom = control->value.toInt();
+        setResetButtonToRed();
+      } );
+    }
+
     ESPUI.addControl( ControlType::Number, "Port to send to*", String( steerConfig.aogPortSendTo ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
       steerConfig.aogPortSendTo = control->value.toInt();
@@ -758,23 +761,25 @@ void setup( void ) {
       } );
     }
 
-    {
-      uint16_t sel = ESPUI.addControl( ControlType::Select, "Inclinometer*", String( ( int )steerConfig.inclinoType ), ControlColor::Wetasphalt, tab,
-      []( Control * control, int id ) {
-        steerConfig.inclinoType = ( SteerConfig::InclinoType )control->value.toInt();
-        setResetButtonToRed();
-      } );
-      ESPUI.addControl( ControlType::Option, "No Inclinometer", "0", ControlColor::Alizarin, sel );
-      ESPUI.addControl( ControlType::Option, "MMA8451", "1", ControlColor::Alizarin, sel );
+    if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+      {
+        uint16_t sel = ESPUI.addControl( ControlType::Select, "Inclinometer*", String( ( int )steerConfig.inclinoType ), ControlColor::Wetasphalt, tab,
+        []( Control * control, int id ) {
+          steerConfig.inclinoType = ( SteerConfig::InclinoType )control->value.toInt();
+          setResetButtonToRed();
+        } );
+        ESPUI.addControl( ControlType::Option, "No Inclinometer", "0", ControlColor::Alizarin, sel );
+        ESPUI.addControl( ControlType::Option, "MMA8451", "1", ControlColor::Alizarin, sel );
 //       ESPUI.addControl( ControlType::Option, "DOGS2", "2", ControlColor::Alizarin, sel );
-      ESPUI.addControl( ControlType::Option, "FXOS8700/FXAS21002", "3", ControlColor::Alizarin, sel );
-    }
+        ESPUI.addControl( ControlType::Option, "FXOS8700/FXAS21002", "3", ControlColor::Alizarin, sel );
+      }
 
-    {
-      ESPUI.addControl( ControlType::Switcher, "Invert Roll Axis (enable for older versions of AgOpenGPS)", steerConfig.invertRoll ? "1" : "0", ControlColor::Peterriver, tab,
-      []( Control * control, int id ) {
-        steerConfig.invertRoll = control->value.toInt() == 1;
-      } );
+      {
+        ESPUI.addControl( ControlType::Switcher, "Invert Roll Axis (enable for older versions of AgOpenGPS)", steerConfig.invertRoll ? "1" : "0", ControlColor::Peterriver, tab,
+        []( Control * control, int id ) {
+          steerConfig.invertRoll = control->value.toInt() == 1;
+        } );
+      }
     }
 
     {
@@ -787,6 +792,7 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Max", "180", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Step", "0.05", ControlColor::Peterriver, num );
     }
+
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Mounting Correction (Pitch) of Imu", String( steerConfig.mountCorrectionImuPitch ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
@@ -797,6 +803,7 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Max, "Max", "180", ControlColor::Peterriver, num );
       ESPUI.addControl( ControlType::Step, "Step", "0.05", ControlColor::Peterriver, num );
     }
+
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "Mounting Correction (Yaw) of Imu", String( steerConfig.mountCorrectionImuYaw ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {

@@ -157,7 +157,7 @@ json parseSteerConfigToJson( const SteerConfig& config ) {
   j["gps"]["outputTo"] = int( config.sendNmeaDataTo );
   j["gps"]["tcpPort"] = config.sendNmeaDataTcpPort;
 
-  j["connection"]["type"] = int( config.mode );
+  j["connection"]["mode"] = int( config.mode );
   j["connection"]["aog"]["sendFrom"] = config.aogPortSendFrom;
   j["connection"]["aog"]["listenTo"] = config.aogPortListenTo;
   j["connection"]["aog"]["sendTo"] = config.aogPortSendTo;
@@ -269,7 +269,7 @@ void parseJsonToSteerConfig( json& j, SteerConfig& config ) {
       config.sendNmeaDataTo = j.value( "/gps/outputTo"_json_pointer, steerConfigDefaults.sendNmeaDataTo );
       config.sendNmeaDataTcpPort = j.value( "/gps/tcpPort"_json_pointer, steerConfigDefaults.sendNmeaDataTcpPort );
 
-      config.mode = j.value( "/connection/type"_json_pointer, steerConfigDefaults.mode );
+      config.mode = j.value( "/connection/mode"_json_pointer, steerConfigDefaults.mode );
       config.aogPortSendFrom = j.value( "/connection/aog/sendFrom"_json_pointer, steerConfigDefaults.aogPortSendFrom );
       config.aogPortListenTo = j.value( "/connection/aog/listenTo"_json_pointer, steerConfigDefaults.aogPortListenTo );
       config.aogPortSendTo = j.value( "/connection/aog/sendTo"_json_pointer, steerConfigDefaults.aogPortSendTo );

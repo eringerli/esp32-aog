@@ -293,7 +293,7 @@ void ntripWorker( void* z ) {
   for( ;; ) {
     HTTPClient http;
     http.begin( initialisation.rtkCorrectionURL );
-    http.setUserAgent( "NTRIP CoffeetracNTRIPClient" );
+    http.setUserAgent( "NTRIP Esp32NTRIPClient" );
     int httpCode = http.GET();
 
     if( httpCode > 0 ) {
