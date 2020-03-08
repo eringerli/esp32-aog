@@ -13,9 +13,6 @@
 [submodule "lib/AutoPID"]
 	path = lib/AutoPID
 	url = https://github.com/eringerli/AutoPID.git
-[submodule "lib/ESPAsyncWebServer"]
-	path = lib/ESPAsyncWebServer
-	url = https://github.com/me-no-dev/ESPAsyncWebServer.git
 [submodule "lib/ESPUI"]
 	path = lib/ESPUI
 	url = https://github.com/eringerli/ESPUI.git
