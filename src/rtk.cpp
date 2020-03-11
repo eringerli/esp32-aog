@@ -85,7 +85,7 @@ void nmeaWorker( void* z ) {
   lastGN.reserve( NmeaBufferSize );
 
   if( steerConfig.sendNmeaDataTcpPort != 0 ) {
-    server = new AsyncServer( steerConfig.sendNmeaDataTcpPort ); // start listening on tcp port 7050
+    server = new AsyncServer( steerConfig.sendNmeaDataTcpPort );
     server->onClient( &handleNewClient, server );
     server->begin();
   }
@@ -402,13 +402,12 @@ void ntripWorker( void* z ) {
   vTaskDelete( myself );
 }
 
-
 void initRtkCorrection() {
   Serial2.begin( steerConfig.rtkCorrectionBaudrate );
 
   if( steerConfig.rtkCorrectionType == SteerConfig::RtkCorrectionType::Ntrip ) {
-    xTaskCreate( ntripWorker, "ntripWorker", 1024, NULL, 8, NULL );
+    xTaskCreate( ntripWorker, "ntripWorker", 3064, NULL, 8, NULL );
   }
 
-  xTaskCreate( nmeaWorker, "nmeaWorker", 1024, NULL, 6, NULL );
+  xTaskCreate( nmeaWorker, "nmeaWorker", 2048, NULL, 6, NULL );
 }
