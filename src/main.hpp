@@ -168,8 +168,8 @@ struct SteerConfig {
   float wheelAngleMinimumAngle = 37;
   float wheelAngleTrackArmLenght = 165;
 
-  SteerConfig::Gpio gpioSDA = SteerConfig::Gpio::Esp32Gpio23;
-  SteerConfig::Gpio gpioSCL = SteerConfig::Gpio::Esp32Gpio22;
+  SteerConfig::Gpio gpioSDA = SteerConfig::Gpio::Default;
+  SteerConfig::Gpio gpioSCL = SteerConfig::Gpio::Default;
   uint32_t i2cBusSpeed = 400000;
   enum class ImuType : uint8_t {
     None = 0,
@@ -241,6 +241,18 @@ struct SteerConfig {
 
   uint16_t qogPortListenTo = 1337;
   uint16_t qogPortSendTo = 1338;
+
+  uint16_t qogChannelIdWorkswitch = 1000;
+  uint16_t qogChannelIdSteerswitch = 1001;
+  uint16_t qogChannelIdWheelAngle = 2000;
+  uint16_t qogChannelIdSetpointSteerAngle = 3000;
+  uint16_t qogChannelIdOrientation = 4000;
+  uint16_t qogChannelIdGpsData = 5000;
+  uint16_t qogChannelIdCanRearHitch = 6000;
+  uint16_t qogChannelIdCanFrontHitch = 6001;
+  uint16_t qogChannelIdCanRearPtoRpm = 6002;
+  uint16_t qogChannelIdCanFrontPtoRpm = 6003;
+  uint16_t qogChannelIdCanMotorRpm = 6004;
 
   bool retainWifiSettings = true;
 

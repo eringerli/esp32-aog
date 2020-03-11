@@ -935,6 +935,121 @@ void setup( void ) {
     }
   }
 
+  if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+
+    // Channels Tab
+    {
+      uint16_t tab = ESPUI.addControl( ControlType::Tab, "Channels", "Channels" );
+
+      {
+        uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Workswitch", String( steerConfig.qogChannelIdWorkswitch ), ControlColor::Peterriver, tab,
+        []( Control * control, int id ) {
+          steerConfig.qogChannelIdWorkswitch = control->value.toInt();
+        } );
+        ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+      }
+      {
+        uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Steerswitch", String( steerConfig.qogChannelIdSteerswitch ), ControlColor::Peterriver, tab,
+        []( Control * control, int id ) {
+          steerConfig.qogChannelIdWorkswitch = control->value.toInt();
+        } );
+        ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+      }
+
+      {
+        uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Wheel Angle", String( steerConfig.qogChannelIdWheelAngle ), ControlColor::Peterriver, tab,
+        []( Control * control, int id ) {
+          steerConfig.qogChannelIdWheelAngle = control->value.toInt();
+        } );
+        ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+      }
+
+      {
+        uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Steer Angle Setpoint", String( steerConfig.qogChannelIdSetpointSteerAngle ), ControlColor::Peterriver, tab,
+        []( Control * control, int id ) {
+          steerConfig.qogChannelIdSetpointSteerAngle = control->value.toInt();
+        } );
+        ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+      }
+
+      {
+        uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Orientation", String( steerConfig.qogChannelIdOrientation ), ControlColor::Peterriver, tab,
+        []( Control * control, int id ) {
+          steerConfig.qogChannelIdOrientation = control->value.toInt();
+        } );
+        ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+      }
+
+      {
+        uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID GPS Data", String( steerConfig.qogChannelIdGpsData ), ControlColor::Peterriver, tab,
+        []( Control * control, int id ) {
+          steerConfig.qogChannelIdGpsData = control->value.toInt();
+        } );
+        ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+        ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+      }
+
+      if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance && steerConfig.canBusEnabled ) {
+        {
+          uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Rear Hitch", String( steerConfig.qogChannelIdCanRearHitch ), ControlColor::Peterriver, tab,
+          []( Control * control, int id ) {
+            steerConfig.qogChannelIdCanRearHitch = control->value.toInt();
+          } );
+          ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+        }
+        {
+          uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Front Hitch", String( steerConfig.qogChannelIdCanFrontHitch ), ControlColor::Peterriver, tab,
+          []( Control * control, int id ) {
+            steerConfig.qogChannelIdCanFrontHitch = control->value.toInt();
+          } );
+          ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+        }
+        {
+          uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Rear RPM", String( steerConfig.qogChannelIdCanRearPtoRpm ), ControlColor::Peterriver, tab,
+          []( Control * control, int id ) {
+            steerConfig.qogChannelIdCanRearPtoRpm = control->value.toInt();
+          } );
+          ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+        }
+        {
+          uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Front RPM", String( steerConfig.qogChannelIdCanFrontPtoRpm ), ControlColor::Peterriver, tab,
+          []( Control * control, int id ) {
+            steerConfig.qogChannelIdCanFrontPtoRpm = control->value.toInt();
+          } );
+          ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+        }
+        {
+          uint16_t num = ESPUI.addControl( ControlType::Number, "Channel ID Motor RPM", String( steerConfig.qogChannelIdCanMotorRpm ), ControlColor::Peterriver, tab,
+          []( Control * control, int id ) {
+            steerConfig.qogChannelIdCanMotorRpm = control->value.toInt();
+          } );
+          ESPUI.addControl( ControlType::Min, "Min", "0", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Max, "Max", "65535", ControlColor::Peterriver, num );
+          ESPUI.addControl( ControlType::Step, "Step", "1", ControlColor::Peterriver, num );
+        }
+      }
+    }
+  }
+
   // Default Configurations Tab
   {
     uint16_t tab = ESPUI.addControl( ControlType::Tab, "Configurations", "Configurations" );
