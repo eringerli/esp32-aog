@@ -23,6 +23,7 @@
 #include <ESPUI.h>
 #include "esp_freertos_hooks.h"
 #include "esp_heap_trace.h"
+#include "esp_heap_caps.h"
 
 #include "main.hpp"
 
@@ -56,7 +57,7 @@ void idleStatsWorker( void* z ) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   String str;
-  str.reserve( 150 );
+  str.reserve( 500 );
 
   multi_heap_info_t heapInfo;
 
@@ -72,9 +73,13 @@ void idleStatsWorker( void* z ) {
     str += millis() / 1000;
     str += "s<br/>Heap free: ";
     str += heapInfo.total_free_bytes / 1024;
-    str += "kB of ";
+    str += "kB (";
+    str += heapInfo.free_blocks;
+    str += "), allocated: ";
     str += heapInfo.total_allocated_bytes / 1024;
-    str += "kB<br/>Lowest ever free Heap: ";
+    str += "kB (";
+    str += heapInfo.allocated_blocks;
+    str += ")<br/>Lowest ever free Heap: ";
     str += heapInfo.minimum_free_bytes / 1024;
     str += "kB<br/>Largest free block on Heap: ";
     str += heapInfo.largest_free_block / 1024;
@@ -88,6 +93,9 @@ void idleStatsWorker( void* z ) {
     idleCtrCore1 = 0;
 
     ESPUI.updateControlAsyncTransmit();
+
+
+//   heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
