@@ -621,26 +621,28 @@ void sensorWorker10HzPoller( void* z ) {
 void initSensors() {
   calculateMountingCorrection();
 
-  if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
-    Control* handle = ESPUI.getControl( labelStatusInclino );
+  if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+    if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
+      Control* handle = ESPUI.getControl( labelStatusInclino );
 
-    if( mma.begin() ) {
-      initialisation.inclinoType = SteerConfig::InclinoType::MMA8451;
+      if( mma.begin() ) {
+        initialisation.inclinoType = SteerConfig::InclinoType::MMA8451;
 
-      handle->value = "MMA8451 found & initialized";
-      handle->color = ControlColor::Emerald;
+        handle->value = "MMA8451 found & initialized";
+        handle->color = ControlColor::Emerald;
 
-      mma.setRange( MMA8451_RANGE_2_G );
-      mma.setDataRate( MMA8451_DATARATE_200_HZ );
-      mma.setFifoSettings( MMA8451_FIFO_CIRCULAR );
-    } else {
-      initialisation.inclinoType = SteerConfig::InclinoType::None;
+        mma.setRange( MMA8451_RANGE_2_G );
+        mma.setDataRate( MMA8451_DATARATE_200_HZ );
+        mma.setFifoSettings( MMA8451_FIFO_CIRCULAR );
+      } else {
+        initialisation.inclinoType = SteerConfig::InclinoType::None;
 
-      handle->value = "MMA8451 not found";
-      handle->color = ControlColor::Alizarin;
+        handle->value = "MMA8451 not found";
+        handle->color = ControlColor::Alizarin;
+      }
+
+      ESPUI.updateControlAsync( handle );
     }
-
-    ESPUI.updateControlAsync( handle );
   }
 
   if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ||
@@ -657,13 +659,15 @@ void initSensors() {
         ESPUI.updateControlAsync( handle );
       }
 
-      if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
-        initialisation.inclinoType = steerConfig.inclinoType;
+      if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+        if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
+          initialisation.inclinoType = steerConfig.inclinoType;
 
-        Control* handle = ESPUI.getControl( labelStatusInclino );
-        handle->value = "FXAS2100/FXOS8700 found & initialized";
-        handle->color = ControlColor::Emerald;
-        ESPUI.updateControlAsync( handle );
+          Control* handle = ESPUI.getControl( labelStatusInclino );
+          handle->value = "FXAS2100/FXOS8700 found & initialized";
+          handle->color = ControlColor::Emerald;
+          ESPUI.updateControlAsync( handle );
+        }
       }
 
       ahrs.begin( 100 );
@@ -677,13 +681,15 @@ void initSensors() {
         ESPUI.updateControlAsync( handle );
       }
 
-      if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
-        initialisation.inclinoType = SteerConfig::InclinoType::None;
+      if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+        if( steerConfig.inclinoType == SteerConfig::InclinoType::Fxos8700Fxas21002 ) {
+          initialisation.inclinoType = SteerConfig::InclinoType::None;
 
-        Control* handle = ESPUI.getControl( labelStatusInclino );
-        handle->value = "FXAS2100/FXOS8700 not found";
-        handle->color = ControlColor::Alizarin;
-        ESPUI.updateControlAsync( handle );
+          Control* handle = ESPUI.getControl( labelStatusInclino );
+          handle->value = "FXAS2100/FXOS8700 not found";
+          handle->color = ControlColor::Alizarin;
+          ESPUI.updateControlAsync( handle );
+        }
       }
     }
 
@@ -708,8 +714,10 @@ void initSensors() {
     ESPUI.updateControlAsync( handle );
   }
 
-  if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
-    xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 2048, NULL, 5, NULL );
+  if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+    if( steerConfig.inclinoType == SteerConfig::InclinoType::MMA8451 ) {
+      xTaskCreate( sensorWorker10HzPoller, "sensorWorker10HzPoller", 2048, NULL, 5, NULL );
+    }
   }
 
   xTaskCreate( sensorWorker100HzPoller, "sensorWorker100HzPoller", 4096, NULL, 6, NULL );
