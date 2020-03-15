@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2019 Christian Riggenbach
+// Copyright (c) 2020 Christian Riggenbach
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,16 +26,30 @@
 #include <SPIFFS.h>
 
 #include "main.hpp"
-#include "settings.hpp"
+#include "jsonFunctions.hpp"
 
 void loadSavedConfig() {
-  auto j = loadJsonFromFile( "/config.json" );
-  parseJsonToSteerConfig( j, steerConfig );
+  {
+    auto j = loadJsonFromFile( "/config.json" );
+    parseJsonToSteerConfig( j, steerConfig );
+  }
+
+  {
+    auto j = loadJsonFromFile( "/calibration.json" );
+    parseJsonToFxos8700Fxas21002Calibration( j, fxos8700Fxas21002CalibrationData );
+  }
 }
 
 void saveConfig() {
-  const auto j = parseSteerConfigToJson( steerConfig );
-  saveJsonToFile( j, "/config.json" );
+  {
+    const auto j = parseSteerConfigToJson( steerConfig );
+    saveJsonToFile( j, "/config.json" );
+  }
+
+  {
+    const auto j = parseFxos8700Fxas21002CalibrationToJson( fxos8700Fxas21002CalibrationData );
+    saveJsonToFile( j, "/calibration.json" );
+  }
 }
 
 json loadJsonFromFile( const char* fileName ) {
@@ -169,7 +183,8 @@ json parseSteerConfigToJson( const SteerConfig& config ) {
   j["connection"]["qog"]["channelId"]["WheelAngle"] = config.qogChannelIdWheelAngle;
   j["connection"]["qog"]["channelId"]["SetpointSteerAngle"] = config.qogChannelIdSetpointSteerAngle;
   j["connection"]["qog"]["channelId"]["Orientation"] = config.qogChannelIdOrientation;
-  j["connection"]["qog"]["channelId"]["GpsData"] = config.qogChannelIdGpsData;
+  j["connection"]["qog"]["channelId"]["GpsDataIn"] = config.qogChannelIdGpsDataIn;
+  j["connection"]["qog"]["channelId"]["GpsDataOut"] = config.qogChannelIdGpsDataOut;
   j["connection"]["qog"]["channelId"]["CanRearHitch"] = config.qogChannelIdCanRearHitch;
   j["connection"]["qog"]["channelId"]["CanFrontHitch"] = config.qogChannelIdCanFrontHitch;
   j["connection"]["qog"]["channelId"]["CanRearPtoRpm"] = config.qogChannelIdCanRearPtoRpm;
@@ -293,7 +308,8 @@ void parseJsonToSteerConfig( json& j, SteerConfig& config ) {
       config.qogChannelIdWheelAngle = j.value( "/connection/qog/channelId/WheelAngle"_json_pointer, steerConfigDefaults.qogChannelIdWheelAngle );
       config.qogChannelIdSetpointSteerAngle = j.value( "/connection/qog/channelId/SetpointSteerAngle"_json_pointer, steerConfigDefaults.qogChannelIdSetpointSteerAngle );
       config.qogChannelIdOrientation = j.value( "/connection/qog/channelId/Orientation"_json_pointer, steerConfigDefaults.qogChannelIdOrientation );
-      config.qogChannelIdGpsData = j.value( "/connection/qog/channelId/GpsData"_json_pointer, steerConfigDefaults.qogChannelIdGpsData );
+      config.qogChannelIdGpsDataIn = j.value( "/connection/qog/channelId/GpsDataIn"_json_pointer, steerConfigDefaults.qogChannelIdGpsDataIn );
+      config.qogChannelIdGpsDataOut = j.value( "/connection/qog/channelId/GpsDataOut"_json_pointer, steerConfigDefaults.qogChannelIdGpsDataOut );
       config.qogChannelIdCanRearHitch = j.value( "/connection/qog/channelId/CanRearHitch"_json_pointer, steerConfigDefaults.qogChannelIdCanRearHitch );
       config.qogChannelIdCanFrontHitch = j.value( "/connection/qog/channelId/CanFrontHitch"_json_pointer, steerConfigDefaults.qogChannelIdCanFrontHitch );
       config.qogChannelIdCanRearPtoRpm = j.value( "/connection/qog/channelId/CanRearPtoRpm"_json_pointer, steerConfigDefaults.qogChannelIdCanRearPtoRpm );
@@ -310,5 +326,84 @@ void parseJsonToSteerConfig( json& j, SteerConfig& config ) {
   }
 }
 
-extern void parseJsonToFxos8700Fxas21002Calibration( json& json, Fxos8700Fxas21002CalibrationData& calibration );
-extern void parseFxos8700Fxas21002CalibrationToJson( Fxos8700Fxas21002CalibrationData& calibration, json& json );
+void sendStateTransmission( uint16_t channelId, bool state ) {
+  json j;
+  j["channelId"] = channelId;
+  j["state"] = state;
+
+  std::vector<std::uint8_t> cbor = json::to_cbor( j );
+  udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
+}
+
+void sendNumberTransmission( uint16_t channelId, double number ) {
+  json j;
+  j["channelId"] = channelId;
+  j["number"] = number;
+
+  std::vector<std::uint8_t> cbor = json::to_cbor( j );
+  udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
+}
+
+void sendQuaternionTransmission( uint16_t channelId, imu::Quaternion quaterion ) {
+  json j;
+  j["channelId"] = channelId;
+  j["x"] = quaterion.x();
+  j["y"] = quaterion.y();
+  j["z"] = quaterion.z();
+  j["w"] = quaterion.w();
+
+  std::vector<std::uint8_t> cbor = json::to_cbor( j );
+  udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
+}
+
+void parseJsonToFxos8700Fxas21002Calibration( json& config, Fxos8700Fxas21002CalibrationData& calibration ) {
+  if( config.is_object() ) {
+    try {
+      calibration.mag_offsets[0] = config.value( "/Fxos8700Fxas21002Calibration/mag_offsets/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_offsets[0] );
+      calibration.mag_offsets[1] = config.value( "/Fxos8700Fxas21002Calibration/mag_offsets/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_offsets[1] );
+      calibration.mag_offsets[2] = config.value( "/Fxos8700Fxas21002Calibration/mag_offsets/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_offsets[2] );
+      calibration.mag_softiron_matrix[0][0] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/0/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[0][0] );
+      calibration.mag_softiron_matrix[0][1] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/0/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[0][1] );
+      calibration.mag_softiron_matrix[0][2] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/0/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[0][2] );
+      calibration.mag_softiron_matrix[1][0] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/1/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[1][0] );
+      calibration.mag_softiron_matrix[1][1] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/1/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[1][1] );
+      calibration.mag_softiron_matrix[1][2] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/1/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[1][2] );
+      calibration.mag_softiron_matrix[2][0] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/2/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[2][0] );
+      calibration.mag_softiron_matrix[2][1] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/2/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[2][1] );
+      calibration.mag_softiron_matrix[2][2] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/2/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[2][2] );
+      calibration.mag_field_strength = config.value( "/Fxos8700Fxas21002Calibration/mag_field_strength"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_field_strength );
+      calibration.gyro_zero_offsets[0] = config.value( "/Fxos8700Fxas21002Calibration/gyro_zero_offsets/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.gyro_zero_offsets[0] );
+      calibration.gyro_zero_offsets[1] = config.value( "/Fxos8700Fxas21002Calibration/gyro_zero_offsets/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.gyro_zero_offsets[1] );
+      calibration.gyro_zero_offsets[2] = config.value( "/Fxos8700Fxas21002Calibration/gyro_zero_offsets/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.gyro_zero_offsets[2] );
+    } catch( json::exception& e ) {
+      // output exception information
+      Serial.print( "message: " );
+      Serial.println( e.what() );
+      Serial.print( "exception id: " );
+      Serial.println( e.id );
+    }
+  }
+}
+
+json parseFxos8700Fxas21002CalibrationToJson( Fxos8700Fxas21002CalibrationData& calibration ) {
+  json j;
+
+  j["Fxos8700Fxas21002Calibration"]["mag_offsets"][0] = calibration.mag_offsets[0];
+  j["Fxos8700Fxas21002Calibration"]["mag_offsets"][1] = calibration.mag_offsets[1];
+  j["Fxos8700Fxas21002Calibration"]["mag_offsets"][2] = calibration.mag_offsets[2];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][0][0] = calibration.mag_softiron_matrix[0][0];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][0][1] = calibration.mag_softiron_matrix[0][1];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][0][2] = calibration.mag_softiron_matrix[0][2];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][1][0] = calibration.mag_softiron_matrix[1][0];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][1][1] = calibration.mag_softiron_matrix[1][1];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][1][2] = calibration.mag_softiron_matrix[1][2];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][2][0] = calibration.mag_softiron_matrix[2][0];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][2][1] = calibration.mag_softiron_matrix[2][1];
+  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][2][2] = calibration.mag_softiron_matrix[2][2];
+  j["Fxos8700Fxas21002Calibration"]["mag_field_strength"] = calibration.mag_field_strength;
+  j["Fxos8700Fxas21002Calibration"]["gyro_zero_offsets"][0] = calibration.gyro_zero_offsets[0];
+  j["Fxos8700Fxas21002Calibration"]["gyro_zero_offsets"][1] = calibration.gyro_zero_offsets[1];
+  j["Fxos8700Fxas21002Calibration"]["gyro_zero_offsets"][2] = calibration.gyro_zero_offsets[2];
+
+  return j;
+}

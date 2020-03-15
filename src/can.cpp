@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2019 Christian Riggenbach
+// Copyright (c) 2020 Christian Riggenbach
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 #include <CAN_config.h>
 
 #include "main.hpp"
+#include "jsonFunctions.hpp"
 
 CAN_device_t CAN_cfg;
 
@@ -61,36 +62,61 @@ void canWorker10Hz( void* z ) {
           // Electronic Engine Controller 1
           case j1939PgnEEC1: {
             steerCanData.motorRpm = ( canFrame.data.u8[4] << 8 | canFrame.data.u8[3] ) / 8;
+
+            if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+              sendNumberTransmission( steerConfig.qogChannelIdCanMotorRpm, steerCanData.motorRpm );
+            }
           }
           break;
 
           // Wheel-based Speed and Distance
           case j1939PgnWBSD: {
             steerCanData.speed = ( canFrame.data.u8[1] << 8 | canFrame.data.u8[0] ) / 1000 * 3.6;
+
+            if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+              sendNumberTransmission( steerConfig.qogChannelIdCanWheelbasedSpeed, steerCanData.speed );
+            }
           }
           break;
 
           // Primary or Rear Hitch Status
           case j1939PgnPHS: {
             steerCanData.rearHitchPosition = canFrame.data.u8[0];
+
+            if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+              sendNumberTransmission( steerConfig.qogChannelIdCanRearHitch, steerCanData.rearHitchPosition );
+            }
           }
+
           break;
 
           // Secondary or Front Hitch Status
           case j1939PgnFHS: {
             steerCanData.frontHitchPosition = canFrame.data.u8[0];
+
+            if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+              sendNumberTransmission( steerConfig.qogChannelIdCanFrontHitch, steerCanData.frontHitchPosition );
+            }
           }
           break;
 
           // Primary or Rear Power Take off Output Shaft
           case j1939PgnRPTO: {
             steerCanData.rearPtoRpm = canFrame.data.u8[1] << 8 | canFrame.data.u8[0];
+
+            if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+              sendNumberTransmission( steerConfig.qogChannelIdCanRearPtoRpm, steerCanData.rearPtoRpm );
+            }
           }
           break;
 
           // Secondary or Front Power Take off Output Shaft
           case j1939PgnFPTO: {
             steerCanData.frontPtoRpm = canFrame.data.u8[1] << 8 | canFrame.data.u8[0];
+
+            if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+              sendNumberTransmission( steerConfig.qogChannelIdCanFrontPtoRpm, steerCanData.frontPtoRpm );
+            }
           }
           break;
         }

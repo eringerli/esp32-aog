@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2019 Christian Riggenbach
+// Copyright (c) 2020 Christian Riggenbach
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
 
 #include <ESPUI.h>
 #include "esp_freertos_hooks.h"
-#include "esp_heap_trace.h"
 #include "esp_heap_caps.h"
 
 #include "main.hpp"

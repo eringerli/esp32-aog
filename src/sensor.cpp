@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2019 Christian Riggenbach
+// Copyright (c) 2020 Christian Riggenbach
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@
 #include <Adafruit_Sensor.h>
 
 #include <Adafruit_MMA8451.h>
-#include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 #include <utility/quaternion.h>
 
@@ -45,12 +44,12 @@
 #include <ESPUI.h>
 
 #include "main.hpp"
+#include "jsonFunctions.hpp"
 
 #include "average.hpp"
 #include "ringbuffer.hpp"
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
-Adafruit_BNO055 bno = Adafruit_BNO055( 55 );
 Adafruit_FXAS21002C fxas2100 = Adafruit_FXAS21002C( 0x0021002C );
 Adafruit_FXOS8700 fxos8700 = Adafruit_FXOS8700( 0x8700A, 0x8700B );
 Adafruit_ADS1115 ads = Adafruit_ADS1115( 0x48 );
@@ -58,8 +57,7 @@ Adafruit_ADS1115 ads = Adafruit_ADS1115( 0x48 );
 Madgwick ahrs;
 // Mahony filter;
 
-adafruit_bno055_offsets_t bno055CalibrationData;
-Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData;
+Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationDefault;
 
 SteerImuInclinometerData steerImuInclinometerData;
 
@@ -68,7 +66,7 @@ float accX, accY, accZ;
 
 volatile uint16_t samplesPerSecond;
 
-Average<float, float, 10> wasAverage;
+// Average<float, float, 10> wasAverage;
 
 imu::Quaternion mountingCorrection;
 
@@ -225,40 +223,6 @@ void calculateMountingCorrection() {
   }
 }
 
-/**************************************************************************/
-/*
-    Display the raw calibration offset and radius data
-    */
-/**************************************************************************/
-void displaySensorOffsets( const adafruit_bno055_offsets_t& calibData ) {
-  Serial.print( "Accelerometer: " );
-  Serial.print( calibData.accel_offset_x );
-  Serial.print( " " );
-  Serial.print( calibData.accel_offset_y );
-  Serial.print( " " );
-  Serial.println( calibData.accel_offset_z );
-
-  Serial.print( "Gyro: " );
-  Serial.print( calibData.gyro_offset_x );
-  Serial.print( " " );
-  Serial.print( calibData.gyro_offset_y );
-  Serial.print( " " );
-  Serial.println( calibData.gyro_offset_z );
-
-  Serial.print( "Mag: " );
-  Serial.print( calibData.mag_offset_x );
-  Serial.print( " " );
-  Serial.print( calibData.mag_offset_y );
-  Serial.print( " " );
-  Serial.println( calibData.mag_offset_z );
-
-  Serial.print( "Accel Radius: " );
-  Serial.println( calibData.accel_radius );
-
-  Serial.print( "Mag Radius: " );
-  Serial.println( calibData.mag_radius );
-}
-
 void sensorWorker100HzPoller( void* z ) {
   vTaskDelay( 2000 );
   constexpr TickType_t xFrequency = 10;
@@ -324,6 +288,8 @@ void sensorWorker100HzPoller( void* z ) {
           fxos8700Fxas21002CalibrationData.gyro_zero_offsets[0] = dataFloat[0];
           fxos8700Fxas21002CalibrationData.gyro_zero_offsets[1] = dataFloat[1];
           fxos8700Fxas21002CalibrationData.gyro_zero_offsets[2] = dataFloat[2];
+
+          setResetButtonToRed();
         }
       }
 
@@ -400,14 +366,31 @@ void sensorWorker100HzPoller( void* z ) {
         euler.toDegrees();
         steerImuInclinometerData.roll = euler[2];
         steerImuInclinometerData.pitch = -euler[1];
+        float heading = euler[0];
 
-        float heading = euler[0] + 180 + 90;
+        if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+          heading += 90;
+        }
+
+        if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+          heading += 180 + 90;
+        }
 
         while( heading > 360 ) {
           heading -= 360;
         }
 
         steerImuInclinometerData.heading = heading;
+
+        if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+          static uint8_t loopCounter = 0;
+
+          if( ++loopCounter >= 10 ) {
+            loopCounter = 0;
+            steerImuInclinometerData.orientation.fromEuler( radians( -euler[1] ), radians( euler[2] ), radians( heading ) );
+            sendQuaternionTransmission( steerConfig.qogChannelIdOrientation, steerImuInclinometerData.orientation );
+          }
+        }
 
 //         if ( !steerConfig.sendCalibrationDataFromImu ) {
 //           static uint8_t loopCounter = 0;
@@ -508,9 +491,15 @@ void sensorWorker100HzPoller( void* z ) {
 
         wheelAngleTmp = wheelAngleSensorFilter.step( wheelAngleTmp );
         steerSetpoints.actualSteerAngle = wheelAngleTmp;
-        wasAverage += wheelAngleTmp;
-      }
 
+        if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+          static uint8_t loopCounter = 0;
+
+          if( ++loopCounter >= 10 ) {
+            sendNumberTransmission( steerConfig.qogChannelIdWheelAngle, wheelAngleTmp );
+          }
+        }
+      }
     }
 
     {

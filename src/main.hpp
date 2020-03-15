@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2019 Christian Riggenbach
+// Copyright (c) 2020 Christian Riggenbach
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,13 @@
 
 #include <Adafruit_MMA8451.h>
 
+#include <utility/quaternion.h>
+
 #include "average.hpp"
+
+#include "jsonqueueselector.h"
+
+extern JsonQueueSelector jsonQueueSelector;
 
 extern uint16_t labelLoad;
 extern uint16_t labelOrientation;
@@ -100,10 +106,10 @@ struct SteerConfig {
     AgOpenGps = 1
   } mode = Mode::QtOpenGuidance;
 
-  char ssid[24] = "QOG";
-  char password[24] = "qogqogqog";
+  char ssid[24] = "NetzRosegghof3";
+  char password[24] = "gghof080";
   char hostname[24] = "ESP32-QOG";
-  SteerConfig::Gpio apModePin = SteerConfig::Gpio::None;
+  SteerConfig::Gpio apModePin = SteerConfig::Gpio::Esp32Gpio13;
 
   //set to 1  if you want to use Steering Motor + Cytron MD30C Driver
   //set to 2  if you want to use Steering Motor + IBT 2  Driver
@@ -242,17 +248,20 @@ struct SteerConfig {
   uint16_t qogPortListenTo = 1337;
   uint16_t qogPortSendTo = 1338;
 
-  uint16_t qogChannelIdWorkswitch = 1000;
-  uint16_t qogChannelIdSteerswitch = 1001;
-  uint16_t qogChannelIdWheelAngle = 2000;
-  uint16_t qogChannelIdSetpointSteerAngle = 3000;
-  uint16_t qogChannelIdOrientation = 4000;
-  uint16_t qogChannelIdGpsData = 5000;
-  uint16_t qogChannelIdCanRearHitch = 6000;
-  uint16_t qogChannelIdCanFrontHitch = 6001;
-  uint16_t qogChannelIdCanRearPtoRpm = 6002;
-  uint16_t qogChannelIdCanFrontPtoRpm = 6003;
-  uint16_t qogChannelIdCanMotorRpm = 6004;
+  uint16_t qogChannelIdAutosteerEnable = 1000;    // in
+  uint16_t qogChannelIdWorkswitch = 2000;
+  uint16_t qogChannelIdSteerswitch = 2001;
+  uint16_t qogChannelIdWheelAngle = 3000;
+  uint16_t qogChannelIdSetpointSteerAngle = 4000; // in
+  uint16_t qogChannelIdOrientation = 5000;
+  uint16_t qogChannelIdGpsDataIn = 6000;          // in
+  uint16_t qogChannelIdGpsDataOut = 6001;
+  uint16_t qogChannelIdCanRearHitch = 7000;
+  uint16_t qogChannelIdCanFrontHitch = 7001;
+  uint16_t qogChannelIdCanRearPtoRpm = 7002;
+  uint16_t qogChannelIdCanFrontPtoRpm = 7003;
+  uint16_t qogChannelIdCanMotorRpm = 7004;
+  uint16_t qogChannelIdCanWheelbasedSpeed = 7005;
 
   bool retainWifiSettings = true;
 
@@ -263,9 +272,9 @@ extern SteerConfig steerConfig, steerConfigDefaults;
 struct Fxos8700Fxas21002CalibrationData {
 
   Fxos8700Fxas21002CalibrationData() {
-    mag_offsets[0] = -13.56F;
-    mag_offsets[1] = -11.98F;
-    mag_offsets[2] = -85.02F;
+    mag_offsets[0] = -13.56f;
+    mag_offsets[1] = -11.98f;
+    mag_offsets[2] = -85.02f;
 
     mag_softiron_matrix[0][0] =  0.998;
     mag_softiron_matrix[0][1] = -0.048;
@@ -277,7 +286,7 @@ struct Fxos8700Fxas21002CalibrationData {
     mag_softiron_matrix[2][1] =  0.016;
     mag_softiron_matrix[2][2] =  0.983;
 
-    mag_field_strength = 53.21F;
+    mag_field_strength = 53.21f;
 
     gyro_zero_offsets[0] = 0;
     gyro_zero_offsets[1] = 0;
@@ -295,7 +304,7 @@ struct Fxos8700Fxas21002CalibrationData {
   // Offsets applied to compensate for gyro zero-drift error for x/y/z
   float gyro_zero_offsets[3];
 };
-extern Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData;
+extern Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationDefault;
 
 struct Initialisation {
   SteerConfig::OutputType outputType = SteerConfig::OutputType::None;
@@ -363,6 +372,8 @@ struct SteerImuInclinometerData {
   float heading;
   float roll;
   float pitch;
+
+  imu::Quaternion orientation;
 };
 extern SteerImuInclinometerData steerImuInclinometerData;
 
@@ -409,6 +420,7 @@ class TCritSect {
 ///////////////////////////////////////////////////////////////////////////
 // Helper Functions
 ///////////////////////////////////////////////////////////////////////////
+extern void setResetButtonToRed();
 
 extern void initIdleStats();
 extern void initSensors();
