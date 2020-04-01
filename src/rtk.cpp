@@ -33,12 +33,15 @@
 #include <MicroNMEA.h>
 
 #include "main.hpp"
+#include "jsonFunctions.hpp"
 
 String lastGN;
 
 constexpr size_t NmeaBufferSize = 120;
 char nmeaBuffer[NmeaBufferSize];
 MicroNMEA nmea( nmeaBuffer, NmeaBufferSize );
+
+AsyncUDP udpGpsData;
 
 AsyncServer* server;
 static std::vector<AsyncClient*> clients;
@@ -90,40 +93,71 @@ void nmeaWorker( void* z ) {
     server->begin();
   }
 
-  constexpr TickType_t xFrequency = 50;
+  constexpr TickType_t xFrequency = 10;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   for( ;; ) {
     uint16_t cnt = Serial2.available();
 
-    if( cnt > sizeof( receiveBuffer ) ) {
-      cnt = sizeof( receiveBuffer );
-    }
-
-    for( uint16_t i = 0; i < cnt; i++ ) {
-      receiveBuffer[i] = Serial2.read();
-    }
-
-    // send sentence to all connected clients on the TCP-Socket
-    for( auto client = clients.begin() ; client != clients.end(); ++client ) {
-      // reply to client
-      if( ( *client )->space() > cnt && ( *client )->canSend() ) {
-        ( *client )->write( receiveBuffer, cnt );
-        ( *client )->send();
+    if( cnt ) {
+      if( cnt > sizeof( receiveBuffer ) ) {
+        cnt = sizeof( receiveBuffer );
       }
-    }
 
-    for( uint16_t i = 0; i < cnt; i++ ) {
-      char c = receiveBuffer[i];
+      for( uint16_t i = 0; i < cnt; ++i ) {
+        receiveBuffer[i] = Serial2.read();
+      }
 
-      if( nmea.process( c ) ) {
-        if( strcmp( nmea.getMessageID(), "GGA" ) == 0 ) {
-          lastGN = nmea.getSentence();
+      // send sentence to all connected clients on the TCP-Socket
+      for( auto client : clients ) {
+        // reply to client
+        if( client->space() > cnt && client->canSend() ) {
+          client->write( receiveBuffer, cnt );
+          client->send();
         }
+      }
 
-        if( steerConfig.sendNmeaDataTo != SteerConfig::SendNmeaDataTo::None ) {
+      if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance &&
+          steerConfig.qogChannelIdGpsDataOut != 0 ) {
+        sendBase64DataTransmission( steerConfig.qogChannelIdGpsDataOut, receiveBuffer, cnt );
+      }
 
-          sentence = nmea.getSentence();
+      switch( steerConfig.sendNmeaDataTo ) {
+        case SteerConfig::SendNmeaDataTo::UDP: {
+          udpGpsData.broadcastTo( ( uint8_t* )receiveBuffer, cnt, initialisation.sendNmeaDataUdpPort );
+        }
+        break;
+
+        case SteerConfig::SendNmeaDataTo::Serial: {
+          Serial.write( ( const uint8_t* )receiveBuffer, cnt );
+        }
+        break;
+
+        case SteerConfig::SendNmeaDataTo::Serial1: {
+          Serial1.write( ( const uint8_t* )receiveBuffer, cnt );
+        }
+        break;
+
+        case SteerConfig::SendNmeaDataTo::Serial2: {
+          Serial2.write( ( const uint8_t* )receiveBuffer, cnt );
+        }
+        break;
+
+        default:
+          break;
+      }
+
+      for( uint16_t i = 0; i < cnt; ++i ) {
+        char c = receiveBuffer[i];
+
+        if( nmea.process( c ) ) {
+          if( strcmp( nmea.getMessageID(), "GGA" ) == 0 ) {
+            lastGN = nmea.getSentence();
+          }
+
+          if( steerConfig.sendNmeaDataTo != SteerConfig::SendNmeaDataTo::None ) {
+
+            sentence = nmea.getSentence();
 
 //           {
 //             gpsData.TOW;
@@ -146,40 +180,15 @@ void nmeaWorker( void* z ) {
 //           nmea.generateChecksum( sentence.c_str(), checksum );
 //           sentence += "*";
 //           sentence += checksum;
-          sentence += "\r\n";
+            sentence += "\r\n";
 
-          switch( steerConfig.sendNmeaDataTo ) {
-            case SteerConfig::SendNmeaDataTo::UDP: {
-              udpSendFrom.broadcastTo( ( uint8_t* )sentence.c_str(), ( uint16_t )sentence.length(), initialisation.portSendTo );
-            }
-            break;
-
-            case SteerConfig::SendNmeaDataTo::Serial: {
-              Serial.print( millis() );
-              Serial.print( ": " );
-              Serial.print( sentence );
-            }
-            break;
-
-            case SteerConfig::SendNmeaDataTo::Serial1: {
-              Serial1.print( sentence );
-            }
-            break;
-
-            case SteerConfig::SendNmeaDataTo::Serial2: {
-              Serial2.print( sentence );
-            }
-            break;
-
-            default:
-              break;
 
           }
         }
-      }
 
 
 //       Serial.write( );
+      }
     }
 
     {
@@ -383,6 +392,7 @@ void ntripWorker( void* z ) {
           vTaskDelay( 1 );
         }
 
+        free( buff );
       }
     }
 
@@ -403,6 +413,14 @@ void ntripWorker( void* z ) {
 }
 
 void initRtkCorrection() {
+  if( steerConfig.sendNmeaDataUdpPort != 0 ) {
+    initialisation.sendNmeaDataUdpPort = steerConfig.sendNmeaDataUdpPort;
+  }
+
+  if( steerConfig.sendNmeaDataUdpPortFrom != 0 ) {
+    udpGpsData.listen( steerConfig.sendNmeaDataUdpPortFrom );
+  }
+
   Serial2.begin( steerConfig.rtkCorrectionBaudrate );
 
   if( steerConfig.rtkCorrectionType == SteerConfig::RtkCorrectionType::Ntrip ) {

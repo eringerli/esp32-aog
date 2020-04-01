@@ -49,7 +49,7 @@ AutoPID pid(
 
 JsonQueueSelector jsonQueueSelector;
 
-constexpr time_t Timeout = 2000;
+constexpr time_t Timeout = 1000;
 
 void autosteerWorker100Hz( void* z ) {
   constexpr TickType_t xFrequency = 10;
@@ -68,18 +68,20 @@ void autosteerWorker100Hz( void* z ) {
       while( uxQueueMessagesWaiting( queue ) ) {
         json* j = nullptr;
 
-        if( xQueueReceive( queue, j, 0 ) == pdTRUE ) {
+        if( xQueueReceive( queue, &j, 0 ) == pdTRUE ) {
           uint16_t channelId = j->at( "channelId" );
 
           if( channelId == steerConfig.qogChannelIdAutosteerEnable ) {
             if( j->contains( "state" ) ) {
               steerSetpoints.enabled = j->at( "state" );
+              steerSetpoints.lastPacketReceived = millis();
             }
           }
 
           if( channelId == steerConfig.qogChannelIdSetpointSteerAngle ) {
             if( j->contains( "number" ) ) {
               steerSetpoints.requestedSteerAngle = j->at( "number" );
+              steerSetpoints.lastPacketReceived = millis();
             }
           }
 
@@ -413,6 +415,78 @@ void autosteerWorker100Hz( void* z ) {
           udpSendFrom.broadcastTo( data, sizeof( data ), initialisation.portSendTo );
         }
       }
+
+      {
+        switch( steerConfig.outputType ) {
+          case SteerConfig::OutputType::SteeringMotorIBT2: {
+            Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
+            String str;
+            str.reserve( 30 );
+            str = "IBT2 Motor, SetPoint: ";
+            str += ( float )steerSetpoints.requestedSteerAngle;
+            str += "°, timeout: ";
+            str += ( bool )( steerSetpoints.lastPacketReceived < timeoutPoint );
+            str += ", enabled: ";
+            str += ( bool )steerSetpoints.enabled;
+            labelStatusOutputHandle->value = str;
+            labelStatusOutputHandle->color = ControlColor::Emerald;
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
+          }
+          break;
+
+          case SteerConfig::OutputType::SteeringMotorCytron: {
+            Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
+            String str;
+            str.reserve( 30 );
+            str = "Cytron Motor, SetPoint: ";
+            str += ( float )steerSetpoints.requestedSteerAngle;
+            str += "°, timeout: ";
+            str += ( bool )( steerSetpoints.lastPacketReceived < timeoutPoint );
+            str += ", enabled: ";
+            str += ( bool )steerSetpoints.enabled;
+            labelStatusOutputHandle->value = str;
+            labelStatusOutputHandle->color = ControlColor::Emerald;
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
+          }
+          break;
+
+          case SteerConfig::OutputType::HydraulicPwm2Coil: {
+            Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
+            String str;
+            str.reserve( 30 );
+            str = "IBT2 Hydraulic PWM 2 Coil, SetPoint: ";
+            str += ( float )steerSetpoints.requestedSteerAngle;
+            str += "°, timeout: ";
+            str += ( bool )( steerSetpoints.lastPacketReceived < timeoutPoint );
+            str += ", enabled: ";
+            str += ( bool )steerSetpoints.enabled;
+            labelStatusOutputHandle->value = str;
+            labelStatusOutputHandle->color = ControlColor::Emerald;
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
+          }
+          break;
+
+          case SteerConfig::OutputType::HydraulicDanfoss: {
+            Control* labelStatusOutputHandle = ESPUI.getControl( labelStatusOutput );
+            String str;
+            str.reserve( 30 );
+            str = "IBT2 Hydraulic Danfoss, SetPoint: ";
+            str += ( float )steerSetpoints.requestedSteerAngle;
+            str += "°, timeout: ";
+            str += ( bool )( steerSetpoints.lastPacketReceived < timeoutPoint );
+            str += ", enabled: ";
+            str += ( bool )steerSetpoints.enabled;
+            labelStatusOutputHandle->value = str;
+            labelStatusOutputHandle->color = ControlColor::Emerald;
+            ESPUI.updateControlAsync( labelStatusOutputHandle );
+          }
+          break;
+
+          default:
+            break;
+
+        }
+      }
     }
 
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
@@ -430,15 +504,18 @@ void initAutosteer() {
     }
 
     if( udpLocalPort.listen( initialisation.portListenTo ) ) {
-      udpLocalPort.onPacket( []( AsyncUDPPacket & packet ) {
+      udpLocalPort.onPacket( []( AsyncUDPPacket packet ) {
         std::vector<uint8_t> v;
         v.reserve( packet.length() );
-        memcpy( v.data(), packet.data(), packet.length() );
 
-        json* j = nullptr;
+        for( uint16_t i = 0; i < packet.length(); ++i ) {
+          v.push_back( packet.data()[i] );
+        }
+
+        json* j = new json;
 
         try {
-          j = new json( json::from_cbor( v ) );
+          *j = json::from_cbor( v );
 
           if( j->is_object() ) {
             if( j->contains( "channelId" ) ) {
@@ -448,21 +525,24 @@ void initAutosteer() {
               uint16_t channelId = j->at( "channelId" );
 
               if( jsonQueueSelector.isValidChannelId( channelId ) ) {
-                xQueueSendToBack( jsonQueueSelector.getQueue( channelId ), j, 0 );
+                xQueueSend( jsonQueueSelector.getQueue( channelId ), &j, 0 );
                 return;
               }
             }
           }
-
-          delete j;
         } catch( json::exception& e ) {
-//           // output exception information
-//           Serial.print( "message: " );
-//           Serial.println( e.what() );
-//           Serial.print( "exception id: " );
-//           Serial.println( e.id );
-          delete j;
+          // output exception information
+          Serial.print( "message: " );
+          Serial.println( e.what() );
+          Serial.print( "exception id: " );
+          Serial.print( e.id );
+          Serial.print( ", packet.length(): " );
+          Serial.println( packet.length() );
+          Serial.write( v.data(), v.size() );
+          Serial.println();
         }
+
+        delete j;
       } );
     }
   }
@@ -483,7 +563,7 @@ void initAutosteer() {
     udpSendFrom.listen( initialisation.portSendFrom );
 
     if( udpLocalPort.listen( initialisation.portListenTo ) ) {
-      udpLocalPort.onPacket( []( AsyncUDPPacket & packet ) {
+      udpLocalPort.onPacket( []( AsyncUDPPacket packet ) {
         uint8_t* data = packet.data();
         uint16_t pgn = data[1] + ( data[0] << 8 );
 
@@ -532,7 +612,7 @@ void initAutosteer() {
     // if no inclinometer is configured, try to receive the value from the net
     if( initialisation.inclinoType == SteerConfig::InclinoType::None ) {
       if( udpRemotePort.listen( initialisation.portSendTo ) ) {
-        udpRemotePort.onPacket( []( AsyncUDPPacket & packet ) {
+        udpRemotePort.onPacket( []( AsyncUDPPacket packet ) {
           uint8_t* data = packet.data();
           uint16_t pgn = data[1] + ( data[0] << 8 );
 
@@ -681,8 +761,6 @@ void initAutosteer() {
     pinMode( ( uint8_t )steerConfig.gpioSteerswitch, INPUT_PULLUP );
   }
 
-  xTaskCreate( autosteerWorker100Hz, "autosteerWorker", 2048, NULL, 3, NULL );
+  xTaskCreate( autosteerWorker100Hz, "autosteerWorker", 3096, NULL, 3, NULL );
 }
-
-
 

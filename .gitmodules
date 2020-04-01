@@ -7,9 +7,6 @@
 [submodule "lib/Adafruit_MMA8451_Library"]
 	path = lib/Adafruit_MMA8451_Library
 	url = https://github.com/eringerli/Adafruit_MMA8451_Library.git
-[submodule "ArduinoJson.git"]
-	path = lib/ArduinoJson
-	url = https://github.com/bblanchon/ArduinoJson.git
 [submodule "lib/AutoPID"]
 	path = lib/AutoPID
 	url = https://github.com/eringerli/AutoPID.git

@@ -93,7 +93,6 @@ void idleStatsWorker( void* z ) {
 
     ESPUI.updateControlAsyncTransmit();
 
-
 //   heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 
     vTaskDelayUntil( &xLastWakeTime, xFrequency );

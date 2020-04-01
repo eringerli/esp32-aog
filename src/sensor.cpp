@@ -532,8 +532,10 @@ void sensorWorker100HzPoller( void* z ) {
             str += "mm";
           } else {
             str += ( float )steerSetpoints.actualSteerAngle;
-            str += "°, Raw ";
+            str += "°, Raw: ";
             str += ( float )steerSetpoints.wheelAngleRaw;
+            str += "°, SetPoint: ";
+            str += ( float )steerSetpoints.requestedSteerAngle;
             str += "°";
           }
 

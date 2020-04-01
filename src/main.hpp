@@ -111,6 +111,10 @@ struct SteerConfig {
   char hostname[24] = "ESP32-QOG";
   SteerConfig::Gpio apModePin = SteerConfig::Gpio::Esp32Gpio13;
 
+  uint32_t baudrate = 115200;
+
+  bool enableOTA = false;
+
   //set to 1  if you want to use Steering Motor + Cytron MD30C Driver
   //set to 2  if you want to use Steering Motor + IBT 2  Driver
   //set to 3  if you want to use IBT 2  Driver + PWM 2-Coil Valve
@@ -240,6 +244,8 @@ struct SteerConfig {
   } sendNmeaDataTo = SendNmeaDataTo::None;
 
   uint16_t sendNmeaDataTcpPort = 0;
+  uint16_t sendNmeaDataUdpPort = 0;
+  uint16_t sendNmeaDataUdpPortFrom = 0;
 
   uint16_t aogPortSendFrom = 5577;
   uint16_t aogPortListenTo = 8888;
@@ -264,11 +270,9 @@ struct SteerConfig {
   uint16_t qogChannelIdCanWheelbasedSpeed = 7005;
 
   bool retainWifiSettings = true;
-
-//   char dummy[100];
-
 };
 extern SteerConfig steerConfig, steerConfigDefaults;
+
 struct Fxos8700Fxas21002CalibrationData {
 
   Fxos8700Fxas21002CalibrationData() {
@@ -315,6 +319,8 @@ struct Initialisation {
   uint16_t portSendFrom = 5577;
   uint16_t portListenTo = 8888;
   uint16_t portSendTo = 9999;
+
+  uint16_t sendNmeaDataUdpPort = 0;
 
   String rtkCorrectionURL = "";
 };

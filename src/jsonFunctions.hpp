@@ -41,6 +41,7 @@ extern void saveJsonToFile( const json& json, const char* fileName );
 extern void parseJsonToSteerConfig( json& json, SteerConfig& config );
 extern json parseSteerConfigToJson( const SteerConfig& config );
 
+extern void sendBase64DataTransmission( uint16_t channelId, const char* data, size_t len );
 extern void sendStateTransmission( uint16_t channelId, bool state );
 extern void sendNumberTransmission( uint16_t channelId, double number );
 extern void sendQuaternionTransmission( uint16_t channelId, imu::Quaternion quaterion );

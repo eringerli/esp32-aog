@@ -35,6 +35,8 @@
 #include <DNSServer.h>
 #include <ESPUI.h>
 
+#include <AsyncElegantOTA.h>
+
 ///////////////////////////////////////////////////////////////////////////
 // global data
 ///////////////////////////////////////////////////////////////////////////
@@ -124,11 +126,9 @@ void addAnalogInputADS1115( uint16_t parent ) {
 // Application
 ///////////////////////////////////////////////////////////////////////////
 void setup( void ) {
-
-  // Serial.begin( 921600 );
   Serial.begin( 115200 );
-  Serial.println( "Setup()" );
 
+  WiFi.disconnect( true );
 
   Wire.begin( ( int )steerConfig.gpioSDA, ( int )steerConfig.gpioSCL, steerConfig.i2cBusSpeed );
 
@@ -138,6 +138,16 @@ void setup( void ) {
   }
 
   loadSavedConfig();
+
+  Serial.updateBaudRate( steerConfig.baudrate );
+
+  if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
+    Serial.println( "Welcome to esp32-aog.\nThe selected mode is QtOpenGuidance.\nTo configure, please open the webui." );
+  }
+
+  if( steerConfig.mode == SteerConfig::Mode::AgOpenGps ) {
+    Serial.println( "Welcome to esp32-aog.\nThe selected mode is AgOpenGps.\nTo configure, please open the webui." );
+  }
 
   if( steerConfig.apModePin != SteerConfig::Gpio::None ) {
     pinMode( ( int )steerConfig.apModePin, OUTPUT );
@@ -274,6 +284,24 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "AgOpenGps", "1", ControlColor::Alizarin, sel );
     }
 
+    {
+      uint16_t baudrate = ESPUI.addControl( ControlType::Select, "Baudrate Serial", String( steerConfig.baudrate ), ControlColor::Peterriver, tab,
+      []( Control * control, int id ) {
+        uint32_t baudrate = control->value.toInt();
+        steerConfig.baudrate = baudrate;
+        Serial.updateBaudRate( baudrate );
+      } );
+      ESPUI.addControl( ControlType::Option, "4800", "4800", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "9600", "9600", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "19200", "19200", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "38400", "38400", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "57600", "57600", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "115200", "115200", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "230400", "230400", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "460800", "460800", ControlColor::Alizarin, baudrate );
+      ESPUI.addControl( ControlType::Option, "921600", "921600", ControlColor::Alizarin, baudrate );
+    }
+
     ESPUI.addControl( ControlType::Text, "SSID*", String( steerConfig.ssid ), ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
       control->value.toCharArray( steerConfig.ssid, sizeof( steerConfig.ssid ) );
@@ -290,9 +318,19 @@ void setup( void ) {
       setResetButtonToRed();
     } );
 
-    ESPUI.addControl( ControlType::Text, "Pin to show AP mode*", String( ( int )steerConfig.apModePin ), ControlColor::Wetasphalt, tab,
+    {
+      uint16_t sel = ESPUI.addControl( ControlType::Select, "Pin to show AP mode*", String( ( int )steerConfig.apModePin ), ControlColor::Wetasphalt, tab,
+      []( Control * control, int id ) {
+        steerConfig.apModePin = ( SteerConfig::Gpio )control->value.toInt();
+        setResetButtonToRed();
+      } );
+      ESPUI.addControl( ControlType::Option, "None", "0", ControlColor::Alizarin, sel );
+      addGpioOutput( sel );
+    }
+
+    ESPUI.addControl( ControlType::Switcher, "OTA Enabled*", steerConfig.enableOTA ? "1" : "0", ControlColor::Wetasphalt, tab,
     []( Control * control, int id ) {
-      steerConfig.apModePin = ( SteerConfig::Gpio )control->value.toInt();
+      steerConfig.enableOTA = control->value.toInt() == 1;
       setResetButtonToRed();
     } );
 
@@ -896,7 +934,7 @@ void setup( void ) {
     }
 
     {
-      uint16_t baudrate = ESPUI.addControl( ControlType::Select, "Baudrate", String( steerConfig.rtkCorrectionBaudrate ), ControlColor::Peterriver, tab,
+      uint16_t baudrate = ESPUI.addControl( ControlType::Select, "Baudrate GPS", String( steerConfig.rtkCorrectionBaudrate ), ControlColor::Peterriver, tab,
       []( Control * control, int id ) {
         uint32_t baudrate = control->value.toInt();
         steerConfig.rtkCorrectionBaudrate = baudrate;
@@ -936,6 +974,17 @@ void setup( void ) {
       ESPUI.addControl( ControlType::Option, "Serial2", "5", ControlColor::Alizarin, sel );
       // ESPUI.addControl( ControlType::Option, "Bluetooth", "6", ControlColor::Alizarin, sel );
     }
+
+    ESPUI.addControl( ControlType::Number, "Port to send Data to*", String( steerConfig.sendNmeaDataUdpPort ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      steerConfig.sendNmeaDataUdpPort = control->value.toInt();
+      setResetButtonToRed();
+    } );
+    ESPUI.addControl( ControlType::Number, "Port to send Data from*", String( steerConfig.sendNmeaDataUdpPortFrom ), ControlColor::Wetasphalt, tab,
+    []( Control * control, int id ) {
+      steerConfig.sendNmeaDataUdpPortFrom = control->value.toInt();
+      setResetButtonToRed();
+    } );
 
     {
       uint16_t num = ESPUI.addControl( ControlType::Number, "TCP-Socket for a direct connection to the GPS-Receiver (set to 0 to deactivate, can be used for configuration with u-center or with 3rd-party software)*", String( steerConfig.sendNmeaDataTcpPort ), ControlColor::Wetasphalt, tab,
@@ -1095,6 +1144,8 @@ void setup( void ) {
     uint16_t tab = ESPUI.addControl( ControlType::Tab, "Configurations", "Configurations" );
     ESPUI.addControl( ControlType::Label, "Attention:", "These Buttons here reset the whole config. This affects the WIFI too, if not configured otherwise below. You have to press \"Apply & Reboot\" above to actualy store them.", ControlColor::Carrot, tab );
 
+    ESPUI.addControl( ControlType::Label, "OTA Update:", "<a href='/update'>Update</a>", ControlColor::Carrot, tab );
+
     ESPUI.addControl( ControlType::Label, "Download the config:", "<a href='config.json'>Configuration</a>", ControlColor::Carrot, tab );
 
     ESPUI.addControl( ControlType::Label, "Upload the config:", "<form method='POST' action='/upload-config' enctype='multipart/form-data'><input name='f' type='file'><input type='submit'></form>", ControlColor::Carrot, tab );
@@ -1165,15 +1216,15 @@ void setup( void ) {
 
   ESPUI.begin( title.c_str() );
 
-  ESPUI.getServer()->on( "/config.json", HTTP_GET, []( AsyncWebServerRequest * request ) {
+  ESPUI.server->on( "/config.json", HTTP_GET, []( AsyncWebServerRequest * request ) {
     request->send( SPIFFS, "/config.json", "application/json", true );
   } );
-  ESPUI.getServer()->on( "/calibration.json", HTTP_GET, []( AsyncWebServerRequest * request ) {
+  ESPUI.server->on( "/calibration.json", HTTP_GET, []( AsyncWebServerRequest * request ) {
     request->send( SPIFFS, "/calibration.json", "application/json", true );
   } );
 
   // upload a file to /upload-config
-  ESPUI.getServer()->on( "/upload-config", HTTP_POST, []( AsyncWebServerRequest * request ) {
+  ESPUI.server->on( "/upload-config", HTTP_POST, []( AsyncWebServerRequest * request ) {
     request->send( 200 );
   }, [tabConfigurations]( AsyncWebServerRequest * request, String filename, size_t index, uint8_t* data, size_t len, bool final ) {
     if( !index ) {
@@ -1196,7 +1247,7 @@ void setup( void ) {
   } );
 
   // upload a file to /upload-calibration
-  ESPUI.getServer()->on( "/upload-calibration", HTTP_POST, []( AsyncWebServerRequest * request ) {
+  ESPUI.server->on( "/upload-calibration", HTTP_POST, []( AsyncWebServerRequest * request ) {
     request->send( 200 );
   }, [tabConfigurations]( AsyncWebServerRequest * request, String filename, size_t index, uint8_t* data, size_t len, bool final ) {
     if( !index ) {
@@ -1218,6 +1269,10 @@ void setup( void ) {
     }
   } );
 
+  if( steerConfig.enableOTA ) {
+    AsyncElegantOTA.begin( ESPUI.server );
+  }
+
   initIdleStats();
 
   initSensors();
@@ -1230,6 +1285,7 @@ void setup( void ) {
 
 void loop( void ) {
   dnsServer.processNextRequest();
+  AsyncElegantOTA.loop();
   vTaskDelay( 100 );
 }
 

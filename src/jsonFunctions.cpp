@@ -25,6 +25,10 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+extern "C" {
+#include <crypto/base64.h>
+}
+
 #include "main.hpp"
 #include "jsonFunctions.hpp"
 
@@ -73,9 +77,13 @@ json loadJsonFromFile( const char* fileName ) {
         Serial.print( "exception id: " );
         Serial.println( e.id );
       }
-
-      file.close();
+    } else {
+      Serial.print( "Could not open file for reading: " );
+      Serial.println( fileName );
+      Serial.flush();
     }
+
+    file.close();
   }
 
   return j;
@@ -89,6 +97,10 @@ void saveJsonToFile( const json& json, const char* fileName ) {
 
   if( file && !file.isDirectory() ) {
     file.write( ( uint8_t* )data.c_str(), data.size() );
+  } else {
+    Serial.print( "Could not open file for writing: " );
+    Serial.println( fileName );
+    Serial.flush();
   }
 
   file.close();
@@ -170,8 +182,13 @@ json parseSteerConfigToJson( const SteerConfig& config ) {
   j["gps"]["baudrate"] = config.rtkCorrectionBaudrate;
   j["gps"]["outputTo"] = int( config.sendNmeaDataTo );
   j["gps"]["tcpPort"] = config.sendNmeaDataTcpPort;
+  j["gps"]["sendNmeaDataUdpPort"] = config.sendNmeaDataUdpPort;
+  j["gps"]["sendNmeaDataUdpPortFrom"] = config.sendNmeaDataUdpPortFrom;
 
   j["connection"]["mode"] = int( config.mode );
+  j["connection"]["baudrate"] = config.baudrate;
+  j["connection"]["enableOTA"] = config.enableOTA;
+
   j["connection"]["aog"]["sendFrom"] = config.aogPortSendFrom;
   j["connection"]["aog"]["listenTo"] = config.aogPortListenTo;
   j["connection"]["aog"]["sendTo"] = config.aogPortSendTo;
@@ -294,6 +311,11 @@ void parseJsonToSteerConfig( json& j, SteerConfig& config ) {
       config.rtkCorrectionBaudrate = j.value( "/gps/baudrate"_json_pointer, steerConfigDefaults.rtkCorrectionBaudrate );
       config.sendNmeaDataTo = j.value( "/gps/outputTo"_json_pointer, steerConfigDefaults.sendNmeaDataTo );
       config.sendNmeaDataTcpPort = j.value( "/gps/tcpPort"_json_pointer, steerConfigDefaults.sendNmeaDataTcpPort );
+      config.sendNmeaDataUdpPort = j.value( "/gps/sendNmeaDataUdpPort"_json_pointer, steerConfigDefaults.sendNmeaDataUdpPort );
+      config.sendNmeaDataUdpPortFrom = j.value( "/gps/sendNmeaDataUdpPortFrom"_json_pointer, steerConfigDefaults.sendNmeaDataUdpPortFrom );
+
+      config.baudrate = j.value( "/connection/baudrate"_json_pointer, steerConfigDefaults.baudrate );
+      config.enableOTA = j.value( "/connection/enableOTA"_json_pointer, steerConfigDefaults.enableOTA );
 
       config.mode = j.value( "/connection/mode"_json_pointer, steerConfigDefaults.mode );
       config.aogPortSendFrom = j.value( "/connection/aog/sendFrom"_json_pointer, steerConfigDefaults.aogPortSendFrom );
@@ -322,7 +344,24 @@ void parseJsonToSteerConfig( json& j, SteerConfig& config ) {
       Serial.println( e.what() );
       Serial.print( "exception id: " );
       Serial.println( e.id );
+      Serial.flush();
     }
+  }
+}
+
+void sendBase64DataTransmission( uint16_t channelId, const char* data, size_t len ) {
+  json j;
+  j["channelId"] = channelId;
+
+  size_t outputLength;
+  char* encoded = ( char* )base64_encode( ( const unsigned char* )data, len, &outputLength );
+
+  if( encoded ) {
+    j["data"] = std::string( encoded, outputLength );
+    free( encoded );
+
+    std::vector<std::uint8_t> cbor = json::to_cbor( j );
+    udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
   }
 }
 
