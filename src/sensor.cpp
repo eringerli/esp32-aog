@@ -35,7 +35,6 @@
 #include <Adafruit_FXAS21002C.h>
 #include <Adafruit_FXOS8700.h>
 
-#include <Mahony.h>
 #include <Madgwick.h>
 
 #include <Adafruit_ADS1015.h>
@@ -55,7 +54,6 @@ Adafruit_FXOS8700 fxos8700 = Adafruit_FXOS8700( 0x8700A, 0x8700B );
 Adafruit_ADS1115 ads = Adafruit_ADS1115( 0x48 );
 
 Madgwick ahrs;
-// Mahony filter;
 
 Fxos8700Fxas21002CalibrationData fxos8700Fxas21002CalibrationData, fxos8700Fxas21002CalibrationDefault;
 
