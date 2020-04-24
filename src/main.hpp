@@ -104,7 +104,7 @@ struct SteerConfig {
   enum class Mode : uint8_t {
     QtOpenGuidance = 0,
     AgOpenGps = 1
-  } mode = Mode::QtOpenGuidance;
+  } mode = Mode::AgOpenGps;
 
   char ssid[24] = "NetzRosegghof3";
   char password[24] = "gghof080";
