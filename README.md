@@ -41,8 +41,8 @@ Software to control the tractor from AgOpenGPS. Can also be used as an NTRIP-cli
 
 ![Schematics](doc/schema.png)
 
-The configuration has to match the connections for the IBT2 (PWM, enable) and the work and steer switches. This schematics is with modules from adafruit, but you
-can use other brands when you adjust the firmware for it. This is usualy done by changing the `board` in `platformio.ini`. 
+The configuration has to match the connections for the IBT2 (PWM, enable) and the work and steer switches. This schematics is with modules from Adafruit, but you
+can use other brands, if you adjust the firmware for it. This is usualy done by changing the `board` in `platformio.ini`. 
 
 An example of a itemlist is below:
 
@@ -92,10 +92,7 @@ Some packets take a real long time to install with no visible progress. Just wai
 ## Downloading the repository
 1. open a folder in the explorer, preferably not too deep inside the drive. `C:\` or a folder under it should work
 1. right click on it and choose "Git Bash Here"
-1. enter `git clone https://github.com/eringerli/esp32-aog.git`
-1. enter `cd esp32-aog`
-1. enter `git submodule init`
-1. enter `git submodule update`
+1. enter `git clone --recursive https://github.com/eringerli/esp32-aog.git`
 
 ## Compiling
 1. open the created folder above from the platformio home
@@ -105,15 +102,18 @@ Some packets take a real long time to install with no visible progress. Just wai
 1. connect the ESP32 over USB
 1. click on upload (the tile with the arrow)
 
+Alternatively you can use the OTA-update in the WebUI: go to the last tab and upload a new image.
+
 ## Configuration
 
 All configuration is done in the WebUI. To connect to the created hotspot of the esp32, using a mobile device is normaly the simplest solution.
 
-To get the IP-adress of the esp32, go to your wifi-settings and look for the gateway-address or use a portscanner. Alternatively, connect the ESP32 to the USB and open a monitor on it. It should print the SSID/IP address. 
+To get the IP-adress of the esp32, go to your wifi-settings and look for the gateway-address or use a portscanner. Alternatively, connect the ESP32 to the USB and open a monitor on it. It should print the SSID/IP address when booting.
 
 After login in to the WebUI, you can then change the wifi to whatever you like. The esp32 tries to login, and if that fails, makes a new hotspot with the given ssid/password. 
 
 **The configuration is saved as long as there is no complete clearing of the flash of the esp32.** To  reset to the defaults, you either press the button in the WebUi or erase the flash of the esp32 with platformio/your editor. A new upload of the firmware doesn't affect the saved settings. 
+
 ## Updating the repository
 As there are sometimes new repositories/submodules added, enter the following to update:
 1. go to the esp32-aog repository and open a git bash-terminal
@@ -125,6 +125,6 @@ As there are sometimes new repositories/submodules added, enter the following to
 Repeat them as needed.
 
 # Donation
-If you like the software, you can donate me some money. But not too much, I mainly wrote this to use myself.
+If you like the software, you can donate me some money.
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/eringerli)
