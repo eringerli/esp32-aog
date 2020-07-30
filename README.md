@@ -65,7 +65,7 @@ Amount | Id | Supplier | Description
 * You can split this into two units: the motor controller and the GPS/IMU stuff.
 * You can solder the wires directly to the esp32 feather, but with the protoboard you can take it away for programming or replacing it.
 
-> Please consider buying quality components by genuine resellers to support the development of new cool stuff.
+> Please consider buying quality components by genuine resellers to support the development of new cool stuff. Make sure you get the right module, cheap knock offs sometimes have other, less precise/powerfull but compatible chips on them, like the ads1015 on the ads1115 module.
 
 # Installation
 
