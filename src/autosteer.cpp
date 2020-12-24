@@ -656,8 +656,8 @@ void initAutosteer() {
     if( steerConfig.gpioDir != SteerConfig::Gpio::None ) {
       pinMode( ( uint8_t )steerConfig.gpioDir, OUTPUT );
       ledcSetup( 0, 1000/*steerConfig.pwmFrequency*/, 8 );
-      ledcAttachPin( ( uint8_t )steerConfig.gpioDir, 0 );
-      ledcWrite( 0, 0 );
+      ledcAttachPin( ( uint8_t )steerConfig.gpioDir, 1 );
+      ledcWrite( 1, 0 );
     }
 
     if( steerConfig.gpioEn != SteerConfig::Gpio::None ) {
