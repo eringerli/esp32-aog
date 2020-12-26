@@ -41,13 +41,8 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Update release
+      uses: johnwbyrd/update-release@v1
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./.pio/build/featheresp32/firmware.bin .pio/build/featheresp32/partitions.bin
-        asset_name: Firmware
-        asset_content_type: application/octet-stream
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: .pio/build/featheresp32/firmware.bin .pio/build/featheresp32/partitions.bin
