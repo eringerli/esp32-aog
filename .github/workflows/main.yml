@@ -31,16 +31,6 @@ jobs:
         pip install --upgrade platformio
     - name: Run PlatformIO
       run: pio run
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
     - name: Update release
       uses: johnwbyrd/update-release@v1.0.0
       with:
