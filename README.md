@@ -1,4 +1,4 @@
-# esp32-aog
+# esp32-aog ![PlatformIO CI](https://github.com/eringerli/esp32-aog/workflows/PlatformIO%20CI/badge.svg?event=push)
 Software to control the tractor from AgOpenGPS. Can also be used as an NTRIP-client and GPS to TCP, Serial or UDP bridge.
 
 # Attention
