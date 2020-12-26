@@ -72,6 +72,31 @@ Amount | Id | Supplier | Description
 
 > Please consider buying quality components by genuine resellers to support the development of new cool stuff. Make sure you get the right module, cheap knock offs sometimes have other, less precise/powerfull but compatible chips on them, like the ads1015 on the ads1115 module.
 
+# Flashing
+In the [releases](https://github.com/eringerli/esp32-aog/releases), there are a pre-compiled versions of this firmware available. Download it and extract it into a folder.
+
+## Windows
+Follow this [guide](http://iot-bits.com/esp32/esp32-flash-download-tool-tutorial/), but enter the files/addresses as below:
+
+Address   | File
+--------- | ----------------------
+`0x1000`  | `bootloader_dio_40m.bin`
+`0x8000`  | `partitions.bin`
+`0xe000`  | `boot_app0.bin`
+`0x10000` | `firmware.bin`
+
+Tick the option to enable the flashing of these files and press on `Start`. The defaults should work, but depending on your version of the ESP32, other settings are necessary, which you can find in the documentation of the manufacturer.
+
+## Linux / command line
+Install `esptool.py`, preferably with the packet management system of your distribution. Open a new terminal window and change to the directory with the already decompressed archive. Then enter:
+```
+esptool.py --chip esp32 --before default_reset --after hard_reset write_flash --flash_size detect 0x1000 bootloader_dio_40m.bin 0x8000 partitions.bin 0xe000 boot_app0.bin 0x10000 firmware.bin
+```
+
+## OTA update
+If you already have flashed a version of it on you ESP32, you can navigate to the update page by clicking on the link in the last tab. Then updload the file `firmware.bin`. Attention: this firmware uses a custom flash-partition-layout, so it has to be flashed once by a flasher as described above. Using another OTA flasher (like an OTA example) doesn't work.
+
+
 # Installation
 
 ## Warning before you start
