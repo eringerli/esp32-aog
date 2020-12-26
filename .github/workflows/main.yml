@@ -31,8 +31,23 @@ jobs:
         pip install --upgrade platformio
     - name: Run PlatformIO
       run: pio run
-    - name: Update release
+    - name: Zip Folder
+      run: zip -D firmware.zip .pio/build/featheresp32/firmware.bin .pio/build/featheresp32/partitions.bin
+    - name: Update release if master
       uses: johnwbyrd/update-release@v1.0.0
+      if: success() && github.ref == 'refs/heads/master'
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: .pio/build/featheresp32/firmware.bin .pio/build/featheresp32/partitions.bin
+        files: firmware.zip
+        prerelease: true
+        release: latest
+        message: This is the lastest, automatically built version. Use with caution!
+        tag: latest
+    - name: Update release if tag
+      uses: johnwbyrd/update-release@v1.0.0
+      if: success() && startsWith(github.ref, 'refs/tags/')
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: firmware.zip
+        prerelease: false 
+        message: This is a regular built version. Should be safe to use.
