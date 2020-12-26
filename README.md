@@ -72,7 +72,7 @@ Amount | Id | Supplier | Description
 
 > Please consider buying quality components by genuine resellers to support the development of new cool stuff. Make sure you get the right module, cheap knock offs sometimes have other, less precise/powerfull but compatible chips on them, like the ads1015 on the ads1115 module.
 
-# Flashing
+# Flashing a pre-compiled release
 In the [releases](https://github.com/eringerli/esp32-aog/releases), there are a pre-compiled versions of this firmware available. Download it and extract it into a folder.
 
 ## Windows
@@ -98,12 +98,14 @@ If you already have flashed a version of it on you ESP32, you can navigate to th
 
 
 # Installation
+TL;DR: If you want to do your own development, you have to install [platformio](https://platformio.org/), clone the repository with all the submodules, build and upload it.
 
-## Warning before you start
+## Windows
+### Warning before you start
 Read this file through, before starting to half-ass it. It is not so hard to get a working system, just give it enough time and install it in this order.
 Some packets take a real long time to install with no visible progress. Just wait until finished.
 
-## Install Prerequisites
+### Install Prerequisites
 1. install atom: https://atom.io/
 1. inside atom:
    1. click on "install a package"
@@ -117,22 +119,32 @@ Some packets take a real long time to install with no visible progress. Just wai
       1. install the "Esspressiv 32" platform
 1. install git: https://git-scm.com/downloads
    1. use the defaults in the setup, define atom as the default editor
-1. install all needed drivers for your platform. This is usualy done by installing the CP210x-driver, but consult the documentation of the manufacturer of your esp32. 
+1. install all needed drivers for your platform. This is usualy done by installing the CP210x-driver, but consult the documentation of the manufacturer of your esp32.
 
-## Downloading the repository
+### Downloading the repository
 1. open a folder in the explorer, preferably not too deep inside the drive. `C:\` or a folder under it should work
 1. right click on it and choose "Git Bash Here"
 1. enter `git clone --recursive https://github.com/eringerli/esp32-aog.git`
 
-## Compiling
+### Compiling
 1. open the created folder above from the platformio home
 1. click build (the tile with the tick), the missing dependencies should be installed automaticaly
 
-## Upload to the ESP32
+### Upload to the ESP32
 1. connect the ESP32 over USB
 1. click on upload (the tile with the arrow)
 
 Alternatively you can use the OTA-update in the WebUI: go to the last tab and upload a new image.
+
+## Linux
+Install `platformio` with the package management system of your distribution and find a guide to help you set it up for your particular editor/IDE.
+
+To do it on the console, clone the repository with all the submodules (`git clone` with `--recurse-submodules`), then change into the cloned folder and enter:
+```
+platformio run -t upload
+```
+
+This takes care of all the required libraries and uploads it to a connected ESP32.
 
 ## Configuration
 
