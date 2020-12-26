@@ -32,7 +32,7 @@ jobs:
     - name: Run PlatformIO
       run: pio run
     - name: Zip Folder
-      run: zip -j firmware.zip .pio/build/featheresp32/firmware.bin .pio/build/featheresp32/partitions.bin
+      run: zip -j firmware.zip .pio/build/featheresp32/firmware.bin .pio/build/featheresp32/partitions.bin ~/.platformio/packages/framework-arduinoespressif32/tools/sdk/bin/bootloader_dio_40m.bin ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin
     - name: Update release if master
       uses: johnwbyrd/update-release@v1.0.0
       if: success() && github.ref == 'refs/heads/master'
