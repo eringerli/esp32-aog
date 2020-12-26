@@ -159,8 +159,8 @@ void canWorker10Hz( void* z ) {
 void initCan() {
   if( steerConfig.canBusEnabled ) {
     CAN_cfg.speed = ( CAN_speed_t )steerConfig.canBusSpeed;
-    CAN_cfg.tx_pin_id = ( gpio_num_t )steerConfig.canBusRx;
-    CAN_cfg.rx_pin_id = ( gpio_num_t )steerConfig.canBusTx;
+    CAN_cfg.tx_pin_id = ( gpio_num_t )steerConfig.canBusTx;
+    CAN_cfg.rx_pin_id = ( gpio_num_t )steerConfig.canBusRx;
     CAN_cfg.rx_queue = xQueueCreate( rxQueueSize, sizeof( CAN_frame_t ) );
     // Init CAN Module
     ESP32Can.CANInit();
