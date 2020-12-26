@@ -42,7 +42,7 @@ jobs:
         draft: false
         prerelease: false
     - name: Update release
-      uses: johnwbyrd/update-release@v1
+      uses: johnwbyrd/update-release@v1.0.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         files: .pio/build/featheresp32/firmware.bin .pio/build/featheresp32/partitions.bin
