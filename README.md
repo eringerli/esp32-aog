@@ -1,6 +1,11 @@
 # esp32-aog
 Software to control the tractor from AgOpenGPS. Can also be used as an NTRIP-client and GPS to TCP, Serial or UDP bridge.
 
+# Attention
+**Please don't fork the repository, if you're not planning to do any changes to the source. There is a button with a star on the page header, besides that is the button to watch for updates. Both help you keep track of the repositories you like.**
+
+Forking makes it extremely hard to keep track of the improvements upstream, where a simple clone is updated in seconds. There's no sense in running an out of date version.
+
 # Features
 * complete rewrite of the software for the physical part of AgOpenGPS. Uses a multi-threaded aproach with clear ownership of data and almost no public
   accessible variables. Tries to use other libraries as much as possible and is clearly structured with meaningful names.
