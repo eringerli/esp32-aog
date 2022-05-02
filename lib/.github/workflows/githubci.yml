@@ -25,12 +25,28 @@
 
 <<<<<<<
 <<<<<<<
+<<<<<<<
+<<<<<<<
     - name: Test the code on supported platforms
       run: python3 ci/build_platform.py main_platforms
 >>>>>>>
 =======
-    - name: clang
 =======
+>>>>>>>
+    - name: clang
+<<<<<<<
+=======
+    - name: Check for correct code formatting with clang-format
+>>>>>>>
+=======
+>>>>>>>
+=======
+         repository: adafruit/ci-arduino
+         path: ci
+
+    - name: Install the prerequisites
+      run: bash ci/actions_install.sh
+
     - name: Check for correct code formatting with clang-format
 >>>>>>>
       run: python3 ci/run-clang-format.py -e "ci/*" -e "bin/*" -r .
@@ -41,6 +57,15 @@
         PRETTYNAME : "Adafruit Arduino Library"
       run: bash ci/doxy_gen_and_deploy.sh
 
+<<<<<<<
+<<<<<<<
     - name: Test the code on supported platforms
+      run: python3 ci/build_platform.py main_platforms
+>>>>>>>
+=======
+    - name: test platforms
+=======
+    - name: Test the code on supported platforms
+>>>>>>>
       run: python3 ci/build_platform.py main_platforms
 >>>>>>>
