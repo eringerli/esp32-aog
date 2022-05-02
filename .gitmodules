@@ -19,3 +19,12 @@
 [submodule "tools/EspArduinoExceptionDecoder"]
 	path = tools/EspArduinoExceptionDecoder
 	url = https://github.com/me21/EspArduinoExceptionDecoder.git
+[submodule "lib/Arduino-ADS131M04"]
+	path = lib/Arduino-ADS131M04
+	url = https://github.com/eringerli/Arduino-ADS131M04.git
+[submodule "lib/ArduinoStreamUtils"]
+	path = lib/ArduinoStreamUtils
+	url = https://github.com/bblanchon/ArduinoStreamUtils.git
+[submodule "lib/cbor-lite"]
+	path = lib/cbor-lite
+	url = https://bitbucket.org/isode/cbor-lite.git
