@@ -22,29 +22,79 @@
 
 #include "main.hpp"
 
-#include <utility/quaternion.h>
-
-// ESP32 pollutes the env with macros for all possible binary values starting with "B" (pe "B1 = 1", "B1111=7"...)
-// undef them, as json.hpp defines a template argument with B1
-#undef B1
-#include <../lib/json/json.hpp>
-using json = nlohmann::json;
+#include "../lib/cbor-lite/include/cbor-lite/codec-fp.h"
 
 #pragma once
 
 extern void loadSavedConfig();
 extern void saveConfig();
 
-extern json loadJsonFromFile( const char* fileName );
-extern void saveJsonToFile( const json& json, const char* fileName );
+extern DynamicJsonDocument loadJsonFromFile( const char* fileName );
+extern void saveJsonToFile( const DynamicJsonDocument& doc, const char* fileName );
 
-extern void parseJsonToSteerConfig( json& json, SteerConfig& config );
-extern json parseSteerConfigToJson( const SteerConfig& config );
+extern void parseJsonToSteerConfig( DynamicJsonDocument& doc, SteerConfig& config );
+extern DynamicJsonDocument parseSteerConfigToJson( const SteerConfig& config );
 
-extern void sendBase64DataTransmission( uint16_t channelId, const char* data, size_t len );
-extern void sendStateTransmission( uint16_t channelId, bool state );
-extern void sendNumberTransmission( uint16_t channelId, double number );
-extern void sendQuaternionTransmission( uint16_t channelId, imu::Quaternion quaterion );
+template< typename T >
+T*
+startAccGyrMagTransmission( uint16_t channelId ) {
+  auto* buffer = new std::vector< std::uint8_t >;
+  buffer->reserve( 1500 );
+  CborLite::encodeMapSize( *buffer, uint8_t( 2 ) );
+  CborLite::encodeText( *buffer, std::string( "cid" ) );
+  CborLite::encodeUnsigned( *buffer, channelId );
+  CborLite::encodeText( *buffer, std::string( "imu" ) );
+  CborLite::encodeArrayIndefinite( *buffer );
 
-extern void parseJsonToFxos8700Fxas21002Calibration( json& config, Fxos8700Fxas21002CalibrationData& calibration );
-extern json parseFxos8700Fxas21002CalibrationToJson( Fxos8700Fxas21002CalibrationData& calibration );
+  return buffer;
+}
+
+template< typename T >
+void
+addAccGyrMagTransmission( T& buffer, ImuDataAccGyrMag data ) {
+  CborLite::encodeMapSize( buffer, uint8_t( 2 ) );
+
+  CborLite::encodeText( buffer, std::string( "ts" ) );
+  CborLite::encodeUnsigned( buffer, micros() );
+
+  CborLite::encodeText( buffer, std::string( "agm" ) );
+  CborLite::encodeArraySize( buffer, uint8_t( 9 ) );
+
+  for( const auto& i : data.acc ) {
+    CborLite::encodeSingleFloat( buffer, i );
+  }
+  for( const auto& i : data.gyr ) {
+    CborLite::encodeSingleFloat( buffer, i );
+  }
+  for( const auto& i : data.mag ) {
+    CborLite::encodeSingleFloat( buffer, i );
+  }
+}
+
+template< typename T >
+void
+addAccGyrTransmission( T& buffer, ImuDataAccGyrMag data ) {
+  CborLite::encodeMapSize( buffer, uint8_t( 2 ) );
+
+  CborLite::encodeText( buffer, std::string( "ts" ) );
+  CborLite::encodeUnsigned( buffer, micros() );
+
+  CborLite::encodeText( buffer, std::string( "ag" ) );
+  CborLite::encodeArraySize( buffer, uint8_t( 6 ) );
+
+  for( const auto& i : data.acc ) {
+    CborLite::encodeSingleFloat( buffer, i );
+  }
+  for( const auto& i : data.gyr ) {
+    CborLite::encodeSingleFloat( buffer, i );
+  }
+}
+
+template< typename T >
+void
+sendAccGyrMagTransmission( T& buffer ) {
+  CborLite::encodeBreakIndefinite( buffer );
+  udpSendFrom.broadcastTo( buffer.data(), buffer.size(), initialisation.portSendTo );
+}
+
+void sendDataTransmission( const uint16_t channelId, const char* data, const size_t len );

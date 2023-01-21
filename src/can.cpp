@@ -20,17 +20,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <ESPUI.h>
-#include <ESP32CAN.h>
 #include <CAN_config.h>
+#include <ESP32CAN.h>
+#include <ESPUI.h>
 
-#include "main.hpp"
 #include "jsonFunctions.hpp"
+#include "main.hpp"
 
 CAN_device_t CAN_cfg;
 
 constexpr uint8_t rxQueueSize = 10;
-
 
 constexpr uint8_t  IsobusPgPos   = 8;
 constexpr uint32_t IsobusPgnMask = 0x03FFFF;
@@ -46,7 +45,8 @@ constexpr uint16_t j1939PgnFPTO = 65092;
 
 // see https://gurtam.com/files/ftp/CAN/ (especialy J1939.zip)
 
-void canWorker10Hz( void* z ) {
+void
+canWorker10Hz( void* z ) {
   constexpr TickType_t xFrequency = 100;
 
   CAN_frame_t canFrame;
@@ -54,37 +54,41 @@ void canWorker10Hz( void* z ) {
   while( 1 ) {
     if( xQueueReceive( CAN_cfg.rx_queue, &canFrame, xFrequency ) == pdTRUE ) {
       if( canFrame.FIR.B.FF == CAN_frame_ext ) {
-
         uint16_t pgn = ( canFrame.MsgID >> IsobusPgPos ) & IsobusPgnMask;
 
         switch( pgn ) {
-
           // Electronic Engine Controller 1
           case j1939PgnEEC1: {
-            steerCanData.motorRpm = ( canFrame.data.u8[4] << 8 | canFrame.data.u8[3] ) / 8;
+            steerCanData.motorRpm =
+              ( canFrame.data.u8[4] << 8 | canFrame.data.u8[3] ) / 8;
 
             if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
-              sendNumberTransmission( steerConfig.qogChannelIdCanMotorRpm, steerCanData.motorRpm );
+              auto package = CborPackageNumber( steerConfig.qogChannelIdCanMotorRpm,
+                                                steerCanData.motorRpm );
+              package.sendPackage();
             }
-          }
-          break;
+          } break;
 
           // Wheel-based Speed and Distance
           case j1939PgnWBSD: {
-            steerCanData.speed = ( canFrame.data.u8[1] << 8 | canFrame.data.u8[0] ) / 1000 * 3.6;
+            steerCanData.speed =
+              float( canFrame.data.u8[1] << 8 | canFrame.data.u8[0] ) / 1000 * 3.6;
 
             if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
-              sendNumberTransmission( steerConfig.qogChannelIdCanWheelbasedSpeed, steerCanData.speed );
+              auto package = CborPackageNumber(
+                steerConfig.qogChannelIdCanWheelbasedSpeed, steerCanData.speed );
+              package.sendPackage();
             }
-          }
-          break;
+          } break;
 
           // Primary or Rear Hitch Status
           case j1939PgnPHS: {
             steerCanData.rearHitchPosition = canFrame.data.u8[0];
 
             if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
-              sendNumberTransmission( steerConfig.qogChannelIdCanRearHitch, steerCanData.rearHitchPosition );
+              auto package = CborPackageNumber( steerConfig.qogChannelIdCanRearHitch,
+                                                steerCanData.rearHitchPosition );
+              package.sendPackage();
             }
           }
 
@@ -95,30 +99,33 @@ void canWorker10Hz( void* z ) {
             steerCanData.frontHitchPosition = canFrame.data.u8[0];
 
             if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
-              sendNumberTransmission( steerConfig.qogChannelIdCanFrontHitch, steerCanData.frontHitchPosition );
+              auto package = CborPackageNumber( steerConfig.qogChannelIdCanFrontHitch,
+                                                steerCanData.frontHitchPosition );
+              package.sendPackage();
             }
-          }
-          break;
+          } break;
 
           // Primary or Rear Power Take off Output Shaft
           case j1939PgnRPTO: {
             steerCanData.rearPtoRpm = canFrame.data.u8[1] << 8 | canFrame.data.u8[0];
 
             if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
-              sendNumberTransmission( steerConfig.qogChannelIdCanRearPtoRpm, steerCanData.rearPtoRpm );
+              auto package = CborPackageNumber( steerConfig.qogChannelIdCanRearPtoRpm,
+                                                steerCanData.rearPtoRpm );
+              package.sendPackage();
             }
-          }
-          break;
+          } break;
 
           // Secondary or Front Power Take off Output Shaft
           case j1939PgnFPTO: {
             steerCanData.frontPtoRpm = canFrame.data.u8[1] << 8 | canFrame.data.u8[0];
 
             if( steerConfig.mode == SteerConfig::Mode::QtOpenGuidance ) {
-              sendNumberTransmission( steerConfig.qogChannelIdCanFrontPtoRpm, steerCanData.frontPtoRpm );
+              auto package = CborPackageNumber( steerConfig.qogChannelIdCanFrontPtoRpm,
+                                                steerCanData.frontPtoRpm );
+              package.sendPackage();
             }
-          }
-          break;
+          } break;
         }
       }
     }
@@ -127,27 +134,31 @@ void canWorker10Hz( void* z ) {
       static uint8_t loopTimeToWaitTo = 0;
 
       if( loopTimeToWaitTo < millis() ) {
-
-        Control* handle = ESPUI.getControl( labelStatusCan );
         String str;
         str.reserve( 200 );
 
-        str = "<table style='margin:auto;'><tr><td style='text-align:left; padding: 0px 5px;'>Wheel-based Speed:</td><td style='text-align:left; padding: 0px 5px;'>";
+        str =
+          "<table style='margin:auto;'><tr><td style='text-align:left; padding: 0px 5px;'>Wheel-based Speed:</td><td style='text-align:left; padding: 0px 5px;'>";
         str += String( steerCanData.speed );
-        str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Motor RPM:</td><td style='text-align:left; padding: 0px 5px;'>";
+        str +=
+          "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Motor RPM:</td><td style='text-align:left; padding: 0px 5px;'>";
         str += String( steerCanData.motorRpm );
-        str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Front Hitch Position:</td><td style='text-align:left; padding: 0px 5px;'>";
+        str +=
+          "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Front Hitch Position:</td><td style='text-align:left; padding: 0px 5px;'>";
         str += String( steerCanData.frontHitchPosition );
-        str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Rear Hitch Position:</td><td style='text-align:left; padding: 0px 5px;'>";
+        str +=
+          "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Rear Hitch Position:</td><td style='text-align:left; padding: 0px 5px;'>";
         str += String( steerCanData.rearHitchPosition );
-        str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Front PTO RPM:</td><td style='text-align:left; padding: 0px 5px;'>";
+        str +=
+          "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Front PTO RPM:</td><td style='text-align:left; padding: 0px 5px;'>";
         str += String( steerCanData.frontPtoRpm );
-        str += "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Rear PTO RPM:</td><td style='text-align:left; padding: 0px 5px;'>";
+        str +=
+          "</td></tr><tr><td style='text-align:left; padding: 0px 5px;'>Rear PTO RPM:</td><td style='text-align:left; padding: 0px 5px;'>";
         str += String( steerCanData.rearPtoRpm );
         str += "</td></tr></table>";
 
-        handle->value = str;
-        ESPUI.updateControlAsync( handle );
+        labelStatusCan->value = str;
+        ESPUI.updateControlAsync( labelStatusCan );
 
         loopTimeToWaitTo = millis() + xFrequency;
       }
@@ -155,13 +166,13 @@ void canWorker10Hz( void* z ) {
   }
 }
 
-
-void initCan() {
+void
+initCan() {
   if( steerConfig.canBusEnabled ) {
-    CAN_cfg.speed = ( CAN_speed_t )steerConfig.canBusSpeed;
+    CAN_cfg.speed     = ( CAN_speed_t )steerConfig.canBusSpeed;
     CAN_cfg.tx_pin_id = ( gpio_num_t )steerConfig.canBusTx;
     CAN_cfg.rx_pin_id = ( gpio_num_t )steerConfig.canBusRx;
-    CAN_cfg.rx_queue = xQueueCreate( rxQueueSize, sizeof( CAN_frame_t ) );
+    CAN_cfg.rx_queue  = xQueueCreate( rxQueueSize, sizeof( CAN_frame_t ) );
     // Init CAN Module
     ESP32Can.CANInit();
 

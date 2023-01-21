@@ -1,3 +1,8 @@
+# Warning
+**This package has grown far away from AgOpenGPS and uses now a custom board with the Ads131m04, ISM330DHCX, LIS3MDL or LSM6DSOX.**
+
+**You can send me a pull request to add support for AOG again, but in the mean time it just doesn't work with AOG!**
+
 # esp32-aog ![PlatformIO CI](https://github.com/eringerli/esp32-aog/workflows/PlatformIO%20CI/badge.svg?event=push)
 Software to control the tractor from AgOpenGPS. Can also be used as an NTRIP-client and GPS to TCP, Serial or UDP bridge.
 

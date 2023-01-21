@@ -22,34 +22,30 @@
 
 #pragma once
 
-#include <memory>
 #include <algorithm>
+#include <memory>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 #include "main.hpp"
 
-// ESP32 pollutes the env with macros for all possible binary values starting with "B" (pe "B1 = 1", "B1111=7"...)
-// undef them, as json.hpp defines a template argument with B1
-#undef B1
-#include <../lib/json/json.hpp>
-using json = nlohmann::json;
+#include "CborPackage.hpp"
 
-class JsonQueueSelector {
-  public:
-    JsonQueueSelector() {}
+#include <map>
 
-    void addQueue( uint16_t channelId, QueueHandle_t queue ) {
-      queueMap[channelId] = queue;
-    }
+class CborQueueSelector {
+public:
+  CborQueueSelector() {}
 
-    bool isValidChannelId( uint16_t channelId ) {
-      return queueMap.count( channelId );
-    }
+  void addQueue( uint16_t channelId, QueueHandle_t queue ) {
+    queueMap[channelId] = queue;
+  }
 
-    QueueHandle_t getQueue( uint16_t channelId ) {
-      return queueMap.at( channelId );
-    }
+  bool isValidChannelId( uint16_t channelId ) { return queueMap.count( channelId ); }
 
-  private:
-    std::map<uint16_t, QueueHandle_t> queueMap;
+  QueueHandle_t getQueue( uint16_t channelId ) { return queueMap.at( channelId ); }
 
+private:
+  std::map< uint16_t, QueueHandle_t > queueMap;
 };

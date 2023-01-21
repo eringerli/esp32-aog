@@ -29,27 +29,43 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
-template< class T, class Tcalc, size_t Size >
-class Average {
+#include <main.hpp>
+
+template< class T, size_t Size, class size_type = uint16_t >
+class RingBuffer {
 private:
   // Pointer zum Puffer
-  T* Buffer;
+  T Buffer[Size];
+
+  // gespeicherte Daten
+  volatile size_type dataInBuffer;
 
   // Lese- und Schreibe-Pointer
-  T* writePointer;
+  volatile T* readPointer;
+  volatile T* writePointer;
 
 public:
-  Average() {
-    writePointer = Buffer = new T[Size];
-    flush();
-  }
+  RingBuffer()
+      : Buffer(), dataInBuffer( 0 ), readPointer( Buffer ), writePointer( Buffer ) {}
 
-  ~Average() { delete Buffer; }
+  bool isEmpty() { return dataInBuffer == 0; }
 
-  void operator+=( const T c ) {
+  size_type sizeOfBuffer() { return dataInBuffer; }
+
+  void addToBufferBack( const T c ) {
+    TCritSect critical();
+
     *writePointer++ = c;
+
+    // bei Überlauf auch readPointer inkrementieren
+    if( dataInBuffer < ( Size * sizeof( T ) ) ) {
+      dataInBuffer++;
+    } else {
+      if( ++readPointer >= &Buffer[Size] ) {
+        readPointer = Buffer;
+      }
+    }
 
     // Überlauf
     if( writePointer >= &( Buffer[Size] ) ) {
@@ -57,15 +73,57 @@ public:
     }
   }
 
-  operator T() {
-    Tcalc avg = 0;
+  void operator>>( T& c ) { c = takeFront(); }
 
-    for( T* ptr = Buffer; ptr <= &( Buffer[Size - 1] ); ptr++ ) {
-      avg += *ptr;
-    }
-
-    return avg / Size;
+  size_type operator<<( const T c ) {
+    addToBufferBack( c );
+    return dataInBuffer;
   }
 
-  void flush() { memset( Buffer, 0, Size * sizeof( T ) ); }
+  T takeFront() {
+    T         c = 0;
+    TCritSect critical();
+
+    // auf leeren Puffer prüfen
+    if( dataInBuffer ) {
+      // hole das Zeichen
+      c = *readPointer++;
+
+      // dataInBuffer ändern
+      dataInBuffer--;
+
+      // Überlauf
+      if( readPointer >= &( Buffer[Size] ) ) {
+        readPointer = Buffer;
+      }
+    }
+
+    return c;
+  }
+
+  T& viewFront() { return *readPointer; }
+
+  void incrementFront() {
+    TCritSect critical();
+
+    // auf leeren Puffer prüfen
+    if( dataInBuffer ) {
+      // hole das Zeichen
+      readPointer++;
+
+      // dataInBuffer ändern
+      dataInBuffer--;
+
+      // Überlauf
+      if( readPointer >= &( Buffer[Size] ) ) {
+        readPointer = Buffer;
+      }
+    }
+  }
+
+  void flush() {
+    TCritSect critical();
+    readPointer  = writePointer;
+    dataInBuffer = 0;
+  }
 };

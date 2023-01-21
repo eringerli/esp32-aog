@@ -9,8 +9,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -25,58 +25,38 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
-extern "C" {
-#include <crypto/base64.h>
-}
-
-#include "main.hpp"
 #include "jsonFunctions.hpp"
+#include "main.hpp"
 
-void loadSavedConfig() {
-  {
-    auto j = loadJsonFromFile( "/config.json" );
-    parseJsonToSteerConfig( j, steerConfig );
-  }
+#include <StreamUtils.h>
 
-  {
-    auto j = loadJsonFromFile( "/calibration.json" );
-    parseJsonToFxos8700Fxas21002Calibration( j, fxos8700Fxas21002CalibrationData );
-  }
+void
+loadSavedConfig() {
+  auto j = loadJsonFromFile( "/config.json" );
+  parseJsonToSteerConfig( j, steerConfig );
 }
 
-void saveConfig() {
-  {
-    const auto j = parseSteerConfigToJson( steerConfig );
-    saveJsonToFile( j, "/config.json" );
-  }
-
-  {
-    const auto j = parseFxos8700Fxas21002CalibrationToJson( fxos8700Fxas21002CalibrationData );
-    saveJsonToFile( j, "/calibration.json" );
-  }
+void
+saveConfig() {
+  const auto j = parseSteerConfigToJson( steerConfig );
+  saveJsonToFile( j, "/config.json" );
 }
 
-json loadJsonFromFile( const char* fileName ) {
-  json j;
+DynamicJsonDocument
+loadJsonFromFile( const char* fileName ) {
+  DynamicJsonDocument doc( 3072 );
 
   if( SPIFFS.exists( fileName ) ) {
-    File file = SPIFFS.open( fileName, "r" );
+    auto file = SPIFFS.open( fileName, "r" );
 
     if( file ) {
-      std::vector<uint8_t> data;
-      data.resize( file.size() );
+      ReadBufferingStream bufferedFile( file, 128 );
 
-      file.read( data.data(), file.size() );
-
-      try {
-        j = json::parse( data/*, nullptr, false*/ );
-      } catch( json::exception& e ) {
-        // output exception information
-        Serial.print( "message: " );
-        Serial.println( e.what() );
-        Serial.print( "exception id: " );
-        Serial.println( e.id );
+      DeserializationError error = deserializeJson( doc, bufferedFile );
+      if( error ) {
+        Serial.println( F( "Failed to read file, using default configuration" ) );
       }
+
     } else {
       Serial.print( "Could not open file for reading: " );
       Serial.println( fileName );
@@ -86,17 +66,16 @@ json loadJsonFromFile( const char* fileName ) {
     file.close();
   }
 
-  return j;
+  return doc;
 }
 
-void saveJsonToFile( const json& json, const char* fileName ) {
-  // pretty print with 2 spaces indentation
-  auto data = json.dump( 2 );
-
+void
+saveJsonToFile( const DynamicJsonDocument& doc, const char* fileName ) {
   File file = SPIFFS.open( fileName, "w" );
 
   if( file && !file.isDirectory() ) {
-    file.write( ( uint8_t* )data.c_str(), data.size() );
+    WriteBufferingStream bufferedFile( file, 128 );
+    serializeJsonPretty( doc, bufferedFile );
   } else {
     Serial.print( "Could not open file for writing: " );
     Serial.println( fileName );
@@ -106,343 +85,367 @@ void saveJsonToFile( const json& json, const char* fileName ) {
   file.close();
 }
 
-json parseSteerConfigToJson( const SteerConfig& config ) {
-  json j;
+DynamicJsonDocument
+parseSteerConfigToJson( const SteerConfig& config ) {
+  DynamicJsonDocument j( 3072 );
 
-  j["wifi"]["ssid"] = config.ssid;
-  j["wifi"]["password"] = config.password;
-  j["wifi"]["hostname"] = config.hostname;
-  j["wifi"]["apModePin"] = int( config.apModePin );
+  j["wifi"]["ssidAp"]         = config.ssidAp;
+  j["wifi"]["passwordAp"]     = config.passwordAp;
+  j["wifi"]["ssidSta"]        = config.ssidSta;
+  j["wifi"]["passwordSta"]    = config.passwordSta;
+  j["wifi"]["hostname"]       = config.hostname;
+  j["wifi"]["apModePin"]      = int( config.apModePin );
   j["wifi"]["retainSettings"] = config.retainWifiSettings;
 
-  j["output"]["type"] = int( config.outputType );
+  j["output"]["type"]         = int( config.outputType );
   j["output"]["pwmFrequency"] = config.pwmFrequency;
-  j["output"]["minPWM"] = config.steeringPidMinPwm;
-  j["output"]["gpioPwm"] = int( config.gpioPwm );
-  j["output"]["gpioDir"] = int( config.gpioDir );
-  j["output"]["gpioEn"] = int( config.gpioEn );
+  j["output"]["minPWM"]       = config.steeringPidMinPwm;
+  j["output"]["gpioPwm"]      = int( config.gpioPwm );
+  j["output"]["gpioDir"]      = int( config.gpioDir );
+  j["output"]["gpioEn"]       = int( config.gpioEn );
 
-  j["PID"]["P"] = config.steeringPidKp;
-  j["PID"]["I"] = config.steeringPidKi;
-  j["PID"]["D"] = config.steeringPidKd;
+  j["PID"]["P"]                = config.steeringPidKp;
+  j["PID"]["I"]                = config.steeringPidKi;
+  j["PID"]["D"]                = config.steeringPidKd;
   j["PID"]["autoBangOnFactor"] = config.steeringPidAutoBangOnFactor;
-  j["PID"]["bangOn"] = config.steeringPidBangOn;
-  j["PID"]["bangOff"] = config.steeringPidBangOff;
+  j["PID"]["bangOn"]           = config.steeringPidBangOn;
+  j["PID"]["bangOff"]          = config.steeringPidBangOff;
 
-  j["workswitch"]["workswitchType"] = int( config.workswitchType );
-  j["workswitch"]["gpioWorkswitch"] = int( config.gpioWorkswitch );
+  j["workswitch"]["workswitchType"]  = int( config.workswitchType );
+  j["workswitch"]["gpioWorkswitch"]  = int( config.gpioWorkswitch );
   j["workswitch"]["gpioSteerswitch"] = int( config.gpioSteerswitch );
-  j["workswitch"]["msAutoRecogniseSteerGpioAsSwitch"] = config.autoRecogniseSteerGpioAsSwitchOrButton;
-  j["workswitch"]["workswitchActiveLow"] = config.workswitchActiveLow;
+  j["workswitch"]["msAutoRecogniseSteerGpioAsSwitch"] =
+    config.autoRecogniseSteerGpioAsSwitchOrButton;
+  j["workswitch"]["workswitchActiveLow"]  = config.workswitchActiveLow;
   j["workswitch"]["steerswitchActiveLow"] = config.steerswitchActiveLow;
 
-  j["wheelangle"]["input"] = config.wheelAngleInput;
-  j["wheelangle"]["sensorType"] = int( config.wheelAngleSensorType );
-  j["wheelangle"]["invert"] = config.invertWheelAngleSensor;
+  j["wheelangle"]["input"]           = config.wheelAngleInput;
+  j["wheelangle"]["sensorType"]      = int( config.wheelAngleSensorType );
+  j["wheelangle"]["invert"]          = config.invertWheelAngleSensor;
   j["wheelangle"]["countsPerDegree"] = config.wheelAngleCountsPerDegree;
-  j["wheelangle"]["positionZero"] = config.wheelAnglePositionZero;
+  j["wheelangle"]["positionZero"]    = config.wheelAnglePositionZero;
 
-  j["wheelangle"]["tierod"]["offset"] = int( config.wheelAngleInput );
-  j["wheelangle"]["tierod"]["FirstArmLenght"] = config.wheelAngleFirstArmLenght;
-  j["wheelangle"]["tierod"]["SecondArmLenght"] = config.wheelAngleSecondArmLenght;
-  j["wheelangle"]["tierod"]["TieRodStroke"] = config.wheelAngleTieRodStroke;
-  j["wheelangle"]["tierod"]["MinimumAngle"] = config.wheelAngleMinimumAngle;
-  j["wheelangle"]["tierod"]["TrackArmLenght"] = config.wheelAngleTrackArmLenght;
-
-  j["i2c"]["sda"] = int( config.gpioSDA );
-  j["i2c"]["scl"] = int( config.gpioSCL );
+  j["i2c"]["sda"]   = int( config.gpioSDA );
+  j["i2c"]["scl"]   = int( config.gpioSCL );
   j["i2c"]["speed"] = config.i2cBusSpeed;
 
-  j["imu"]["type"] = int( config.imuType );
+  j["spi"]["sck"]   = int( config.gpioSck );
+  j["spi"]["miso"]  = int( config.gpioMiso );
+  j["spi"]["mosi"]  = int( config.gpioMosi );
+  j["spi"]["speed"] = config.spiBusSpeed;
 
-  j["inclinomeer"]["type"] = int( config.inclinoType );
-  j["inclinomeer"]["invertRoll"] = config.invertRoll;
+  j["adcimu"]["ads131m04Cs"]   = int( config.gpioAds131m04Cs );
+  j["adcimu"]["ads131m04Drdy"] = int( config.gpioAds131m04Drdy );
+  j["adcimu"]["accGyroCs"]     = int( config.gpioAccGyroCs );
+  j["adcimu"]["accGyroDrdy"]   = int( config.gpioAccGyroDrdy );
+  j["adcimu"]["magCs"]         = int( config.gpioMagCs );
+  j["adcimu"]["magDrdy"]       = int( config.gpioMagDrdy );
 
-  j["mountingCorrection"]["roll"] = config.mountCorrectionImuRoll;
-  j["mountingCorrection"]["pitch"] = config.mountCorrectionImuPitch;
-  j["mountingCorrection"]["yaw"] = config.mountCorrectionImuYaw;
+  j["filter"]["samplerate"]       = ( int )( config.ads131m04SampleRate );
+  j["filter"]["cutoffFrequency1"] = ( int )( config.filterCutOffFrequencies[0] );
+  j["filter"]["cutoffFrequency2"] = ( int )( config.filterCutOffFrequencies[1] );
+  j["filter"]["cutoffFrequency3"] = ( int )( config.filterCutOffFrequencies[2] );
+  j["filter"]["cutoffFrequency4"] = ( int )( config.filterCutOffFrequencies[3] );
 
-  j["canBus"]["enabled"] = config.canBusEnabled;
-  j["canBus"]["rxPin"] = int( config.canBusRx );
-  j["canBus"]["txPin"] = int( config.canBusTx );
-  j["canBus"]["speed"] = int( config.canBusSpeed );
-  j["canBus"]["hitchThreshold"] = config.canBusHitchThreshold;
+  j["canBus"]["enabled"]                  = config.canBusEnabled;
+  j["canBus"]["rxPin"]                    = int( config.canBusRx );
+  j["canBus"]["txPin"]                    = int( config.canBusTx );
+  j["canBus"]["speed"]                    = int( config.canBusSpeed );
+  j["canBus"]["hitchThreshold"]           = config.canBusHitchThreshold;
   j["canBus"]["hitchThresholdHysteresis"] = config.canBusHitchThresholdHysteresis;
-  j["canBus"]["rpmThreshold"] = config.canBusRpmThreshold;
-  j["canBus"]["rpmThresholdHysteresis"] = config.canBusRpmThresholdHysteresis;
+  j["canBus"]["rpmThreshold"]             = config.canBusRpmThreshold;
+  j["canBus"]["rpmThresholdHysteresis"]   = config.canBusRpmThresholdHysteresis;
 
-  j["gps"]["correctionSource"] = int( config.rtkCorrectionType );
-  j["gps"]["ntrip"]["server"] = config.rtkCorrectionServer;
-  j["gps"]["ntrip"]["port"] = config.rtkCorrectionPort;
-  j["gps"]["ntrip"]["username"] = config.rtkCorrectionUsername;
-  j["gps"]["ntrip"]["password"] = config.rtkCorrectionPassword;
-  j["gps"]["ntrip"]["mountpoint"] = config.rtkCorrectionMountpoint;
-  j["gps"]["ntrip"]["NMEAToSend"] = config.rtkCorrectionNmeaToSend;
-  j["gps"]["ntrip"]["intervalSendPosition"] = config.ntripPositionSendIntervall;
-  j["gps"]["baudrate"] = config.rtkCorrectionBaudrate;
-  j["gps"]["outputTo"] = int( config.sendNmeaDataTo );
-  j["gps"]["tcpPort"] = config.sendNmeaDataTcpPort;
-  j["gps"]["sendNmeaDataUdpPort"] = config.sendNmeaDataUdpPort;
-  j["gps"]["sendNmeaDataUdpPortFrom"] = config.sendNmeaDataUdpPortFrom;
+  j["gps"]["correctionSource"]           = int( config.rtkCorrectionType );
+  j["gps"]["rtkCorrectionServer"]        = config.rtkCorrectionServer;
+  j["gps"]["rtkCorrectionPort"]          = config.rtkCorrectionPort;
+  j["gps"]["rtkCorrectionUsername"]      = config.rtkCorrectionUsername;
+  j["gps"]["rtkCorrectionPassword"]      = config.rtkCorrectionPassword;
+  j["gps"]["rtkCorrectionMountpoint"]    = config.rtkCorrectionMountpoint;
+  j["gps"]["rtkCorrectionNmeaToSend"]    = config.rtkCorrectionNmeaToSend;
+  j["gps"]["ntripPositionSendIntervall"] = config.ntripPositionSendIntervall;
+  j["gps"]["rtkCorrectionBaudrate"]      = config.rtkCorrectionBaudrate;
+  j["gps"]["sendNmeaDataTo"]             = int( config.sendNmeaDataTo );
+  j["gps"]["sendNmeaDataTcpPort"]        = config.sendNmeaDataTcpPort;
+  j["gps"]["sendNmeaDataUdpPort"]        = config.sendNmeaDataUdpPort;
+  j["gps"]["sendNmeaDataUdpPortFrom"]    = config.sendNmeaDataUdpPortFrom;
 
-  j["connection"]["mode"] = int( config.mode );
-  j["connection"]["baudrate"] = config.baudrate;
+  j["connection"]["mode"]      = int( config.mode );
+  j["connection"]["baudrate"]  = config.baudrate;
   j["connection"]["enableOTA"] = config.enableOTA;
 
-  j["connection"]["aog"]["sendFrom"] = config.aogPortSendFrom;
-  j["connection"]["aog"]["listenTo"] = config.aogPortListenTo;
-  j["connection"]["aog"]["sendTo"] = config.aogPortSendTo;
+  j["connection"]["aogPortSendFrom"] = config.aogPortSendFrom;
+  j["connection"]["aogPortListenTo"] = config.aogPortListenTo;
+  j["connection"]["aogPortSendTo"]   = config.aogPortSendTo;
 
-  j["connection"]["qog"]["listenTo"] = config.qogPortListenTo;
-  j["connection"]["qog"]["sendTo"] = config.qogPortSendTo;
-  j["connection"]["qog"]["channelId"]["Workswitch"] = config.qogChannelIdWorkswitch;
-  j["connection"]["qog"]["channelId"]["Steerswitch"] = config.qogChannelIdSteerswitch;
-  j["connection"]["qog"]["channelId"]["WheelAngle"] = config.qogChannelIdWheelAngle;
-  j["connection"]["qog"]["channelId"]["SetpointSteerAngle"] = config.qogChannelIdSetpointSteerAngle;
-  j["connection"]["qog"]["channelId"]["Orientation"] = config.qogChannelIdOrientation;
-  j["connection"]["qog"]["channelId"]["GpsDataIn"] = config.qogChannelIdGpsDataIn;
-  j["connection"]["qog"]["channelId"]["GpsDataOut"] = config.qogChannelIdGpsDataOut;
-  j["connection"]["qog"]["channelId"]["CanRearHitch"] = config.qogChannelIdCanRearHitch;
-  j["connection"]["qog"]["channelId"]["CanFrontHitch"] = config.qogChannelIdCanFrontHitch;
-  j["connection"]["qog"]["channelId"]["CanRearPtoRpm"] = config.qogChannelIdCanRearPtoRpm;
-  j["connection"]["qog"]["channelId"]["CanFrontPtoRpm"] = config.qogChannelIdCanFrontPtoRpm;
-  j["connection"]["qog"]["channelId"]["CanMotorRpm"] = config.qogChannelIdCanMotorRpm;
+  j["connection"]["qogPortListenTo"] = config.qogPortListenTo;
+  j["connection"]["qogPortSendTo"]   = config.qogPortSendTo;
+
+  j["channelId"]["Workswitch"]         = config.qogChannelIdWorkswitch;
+  j["channelId"]["Steerswitch"]        = config.qogChannelIdSteerswitch;
+  j["channelId"]["WheelAngle"]         = config.qogChannelIdWheelAngle;
+  j["channelId"]["SetpointSteerAngle"] = config.qogChannelIdSetpointSteerAngle;
+  j["channelId"]["Orientation"]        = config.qogChannelIdOrientation;
+  j["channelId"]["GpsDataIn"]          = config.qogChannelIdGpsDataIn;
+  j["channelId"]["GpsDataOut"]         = config.qogChannelIdGpsDataOut;
+  j["channelId"]["CanRearHitch"]       = config.qogChannelIdCanRearHitch;
+  j["channelId"]["CanFrontHitch"]      = config.qogChannelIdCanFrontHitch;
+  j["channelId"]["CanRearPtoRpm"]      = config.qogChannelIdCanRearPtoRpm;
+  j["channelId"]["CanFrontPtoRpm"]     = config.qogChannelIdCanFrontPtoRpm;
+  j["channelId"]["CanMotorRpm"]        = config.qogChannelIdCanMotorRpm;
 
   return j;
 }
 
-void parseJsonToSteerConfig( json& j, SteerConfig& config ) {
-  if( j.is_object() ) {
-    try {
-      {
-        std::string str = j.value( "/wifi/ssid"_json_pointer, steerConfigDefaults.ssid );
-        memcpy( config.ssid, str.c_str(), std::min( str.size(), sizeof( config.ssid ) ) );
-      }
-      {
-        std::string str = j.value( "/wifi/password"_json_pointer, steerConfigDefaults.password );
-        memcpy( config.password, str.c_str(), std::min( str.size(), sizeof( config.password ) ) );
-      }
-      {
-        std::string str = j.value( "/wifi/hostname"_json_pointer, steerConfigDefaults.hostname );
-        memcpy( config.hostname, str.c_str(), std::min( str.size(), sizeof( config.hostname ) ) );
-      }
-      config.apModePin = j.value( "/wifi/apModePin"_json_pointer, steerConfigDefaults.apModePin );
-      config.retainWifiSettings = j.value( "/wifi/retainSettings"_json_pointer, steerConfigDefaults.retainWifiSettings );
+void
+parseJsonToSteerConfig( DynamicJsonDocument& doc, SteerConfig& config ) {
+  if( !doc.isNull() ) {
+    {
+      strlcpy( config.ssidAp,
+               doc["wifi"]["ssidAp"] | steerConfigDefaults.ssidAp,
+               sizeof( config.ssidAp ) );
+      strlcpy( config.passwordAp,
+               doc["wifi"]["passwordAp"] | steerConfigDefaults.passwordAp,
+               sizeof( config.passwordAp ) );
+      strlcpy( config.ssidSta,
+               doc["wifi"]["ssidSta"] | steerConfigDefaults.ssidSta,
+               sizeof( config.ssidSta ) );
+      strlcpy( config.passwordSta,
+               doc["wifi"]["passwordSta"] | steerConfigDefaults.passwordSta,
+               sizeof( config.passwordSta ) );
+      strlcpy( config.hostname,
+               doc["wifi"]["hostname"] | steerConfigDefaults.hostname,
+               sizeof( config.hostname ) );
 
-      config.outputType = j.value( "/output/type"_json_pointer, steerConfigDefaults.outputType );
-      config.pwmFrequency = j.value( "/output/pwmFrequency"_json_pointer, steerConfigDefaults.pwmFrequency );
-      config.steeringPidMinPwm = j.value( "/output/minPWM"_json_pointer, steerConfigDefaults.steeringPidMinPwm );
-      config.gpioPwm = j.value( "/output/gpioPwm"_json_pointer, steerConfigDefaults.gpioPwm );
-      config.gpioDir = j.value( "/output/gpioDir"_json_pointer, steerConfigDefaults.gpioDir );
-      config.gpioEn = j.value( "/output/gpioEn"_json_pointer, steerConfigDefaults.gpioEn );
+      config.apModePin = ( SteerConfig::Gpio )( doc["wifi"]["apModePin"] |
+                                                int( steerConfigDefaults.apModePin ) );
+      config.retainWifiSettings =
+        doc["wifi"]["retainWifiSettings"] | steerConfigDefaults.retainWifiSettings;
+    }
 
-      config.steeringPidKp = j.value( "/PID/P"_json_pointer, steerConfigDefaults.steeringPidKp );
-      config.steeringPidKi = j.value( "/PID/I"_json_pointer, steerConfigDefaults.steeringPidKi );
-      config.steeringPidKd = j.value( "/PID/D"_json_pointer, steerConfigDefaults.steeringPidKd );
-      config.steeringPidAutoBangOnFactor = j.value( "/PID/autoBangOnFactor"_json_pointer, steerConfigDefaults.steeringPidAutoBangOnFactor );
-      config.steeringPidBangOn = j.value( "/PID/bangOn"_json_pointer, steerConfigDefaults.steeringPidBangOn );
-      config.steeringPidBangOff = j.value( "/PID/bangOff"_json_pointer, steerConfigDefaults.steeringPidBangOff );
+    {
+      config.outputType = ( SteerConfig::OutputType )(
+        doc["output"]["type"] | int( steerConfigDefaults.outputType ) );
+      config.pwmFrequency =
+        doc["output"]["pwmFrequency"] | steerConfigDefaults.pwmFrequency;
+      config.steeringPidMinPwm =
+        doc["output"]["minPWM"] | steerConfigDefaults.steeringPidMinPwm;
+      config.gpioPwm = ( SteerConfig::Gpio )( doc["output"]["gpioPwm"] |
+                                              int( steerConfigDefaults.gpioPwm ) );
+      config.gpioDir = ( SteerConfig::Gpio )( doc["output"]["gpioDir"] |
+                                              int( steerConfigDefaults.gpioDir ) );
+      config.gpioEn  = ( SteerConfig::Gpio )( doc["output"]["gpioEn"] |
+                                             int( steerConfigDefaults.gpioEn ) );
+    }
 
-      config.workswitchType = j.value( "/workswitch/workswitchType"_json_pointer, steerConfigDefaults.workswitchType );
-      config.gpioWorkswitch = j.value( "/workswitch/gpioWorkswitch"_json_pointer, steerConfigDefaults.gpioWorkswitch );
-      config.gpioSteerswitch = j.value( "/workswitch/gpioSteerswitch"_json_pointer, steerConfigDefaults.gpioSteerswitch );
-      config.autoRecogniseSteerGpioAsSwitchOrButton = j.value( "/workswitch/msAutoRecogniseSteerGpioAsSwitch"_json_pointer, steerConfigDefaults.autoRecogniseSteerGpioAsSwitchOrButton );
-      config.workswitchActiveLow = j.value( "/workswitch/workswitchActiveLow"_json_pointer, steerConfigDefaults.workswitchActiveLow );
-      config.steerswitchActiveLow = j.value( "/workswitch/steerswitchActiveLow"_json_pointer, steerConfigDefaults.steerswitchActiveLow );
+    {
+      config.steeringPidKp = doc["steeringPid"]["P"] | steerConfigDefaults.steeringPidKp;
+      config.steeringPidKp = doc["steeringPid"]["I"] | steerConfigDefaults.steeringPidKp;
+      config.steeringPidKp = doc["steeringPid"]["D"] | steerConfigDefaults.steeringPidKp;
+      config.steeringPidAutoBangOnFactor =
+        doc["steeringPid"]["autoBangOnFactor"] |
+        steerConfigDefaults.steeringPidAutoBangOnFactor;
+      config.steeringPidBangOn =
+        doc["steeringPid"]["bangOn"] | steerConfigDefaults.steeringPidBangOn;
+      config.steeringPidBangOff =
+        doc["steeringPid"]["bangOff"] | steerConfigDefaults.steeringPidBangOff;
+    }
 
-      config.wheelAngleInput = j.value( "/wheelangle/input"_json_pointer, steerConfigDefaults.wheelAngleInput );
-      config.wheelAngleSensorType = j.value( "/wheelangle/sensorType"_json_pointer, steerConfigDefaults.wheelAngleSensorType );
-      config.invertWheelAngleSensor = j.value( "/wheelangle/invert"_json_pointer, steerConfigDefaults.invertWheelAngleSensor );
-      config.wheelAngleCountsPerDegree = j.value( "/wheelangle/countsPerDegree"_json_pointer, steerConfigDefaults.wheelAngleCountsPerDegree );
-      config.wheelAnglePositionZero = j.value( "/wheelangle/positionZero"_json_pointer, steerConfigDefaults.wheelAnglePositionZero );
+    {
+      config.workswitchType = ( SteerConfig::WorkswitchType )(
+        doc["workswitch"]["workswitchType"] | int( steerConfigDefaults.workswitchType ) );
+      config.gpioWorkswitch = ( SteerConfig::Gpio )(
+        doc["workswitch"]["gpioWorkswitch"] | int( steerConfigDefaults.gpioWorkswitch ) );
+      config.gpioSteerswitch =
+        ( SteerConfig::Gpio )( doc["workswitch"]["gpioSteerswitch"] |
+                               int( steerConfigDefaults.gpioSteerswitch ) );
+      config.autoRecogniseSteerGpioAsSwitchOrButton =
+        doc["workswitch"]["autoRecogniseSteerGpioAsSwitchOrButton"] |
+        steerConfigDefaults.autoRecogniseSteerGpioAsSwitchOrButton;
+      config.workswitchActiveLow = doc["workswitch"]["workswitchActiveLow"] |
+                                   steerConfigDefaults.workswitchActiveLow;
+      config.steerswitchActiveLow = doc["workswitch"]["steerswitchActiveLow"] |
+                                    steerConfigDefaults.steerswitchActiveLow;
+    }
 
-      config.wheelAngleFirstArmLenght = j.value( "/wheelangle/tierod/FirstArmLenght"_json_pointer, steerConfigDefaults.wheelAngleFirstArmLenght );
-      config.wheelAngleSecondArmLenght = j.value( "/wheelangle/tierod/SecondArmLenght"_json_pointer, steerConfigDefaults.wheelAngleSecondArmLenght );
-      config.wheelAngleTieRodStroke = j.value( "/wheelangle/tierod/TieRodStroke"_json_pointer, steerConfigDefaults.wheelAngleTieRodStroke );
-      config.wheelAngleMinimumAngle = j.value( "/wheelangle/tierod/MinimumAngle"_json_pointer, steerConfigDefaults.wheelAngleMinimumAngle );
-      config.wheelAngleTrackArmLenght = j.value( "/wheelangle/tierod/TrackArmLenght"_json_pointer, steerConfigDefaults.wheelAngleTrackArmLenght );
+    {
+      config.wheelAngleInput =
+        doc["wheelangle"]["input"] | steerConfigDefaults.wheelAngleInput;
+      config.wheelAngleSensorType = ( SteerConfig::WheelAngleSensorType )(
+        doc["wheelangle"]["sensorType"] |
+        int( steerConfigDefaults.wheelAngleSensorType ) );
+      config.invertWheelAngleSensor =
+        doc["wheelangle"]["invert"] | steerConfigDefaults.invertWheelAngleSensor;
+      config.wheelAngleCountsPerDegree = doc["wheelangle"]["countsPerDegree"] |
+                                         steerConfigDefaults.wheelAngleCountsPerDegree;
+      config.wheelAnglePositionZero =
+        doc["wheelangle"]["positionZero"] | steerConfigDefaults.wheelAnglePositionZero;
+    }
 
-      config.gpioSDA = j.value( "/i2c/sda"_json_pointer, steerConfigDefaults.gpioSDA );
-      config.gpioSCL = j.value( "/i2c/scl"_json_pointer, steerConfigDefaults.gpioSCL );
-      config.i2cBusSpeed = j.value( "/i2c/speed"_json_pointer, steerConfigDefaults.i2cBusSpeed );
+    {
+      config.gpioSDA =
+        ( SteerConfig::Gpio )( doc["i2c"]["sda"] | int( steerConfigDefaults.gpioSDA ) );
+      config.gpioSCL =
+        ( SteerConfig::Gpio )( doc["i2c"]["scl"] | int( steerConfigDefaults.gpioSCL ) );
+      config.i2cBusSpeed = doc["i2c"]["speed"] | steerConfigDefaults.i2cBusSpeed;
+    }
 
-      config.imuType = j.value( "/imu/type"_json_pointer, steerConfigDefaults.imuType );
+    {
+      config.gpioSck =
+        ( SteerConfig::Gpio )( doc["spi"]["sck"] | int( steerConfigDefaults.gpioSck ) );
+      config.gpioMiso =
+        ( SteerConfig::Gpio )( doc["spi"]["miso"] | int( steerConfigDefaults.gpioMiso ) );
+      config.gpioMosi =
+        ( SteerConfig::Gpio )( doc["spi"]["mosi"] | int( steerConfigDefaults.gpioMosi ) );
+      config.spiBusSpeed = doc["spi"]["speed"] | steerConfigDefaults.spiBusSpeed;
+    }
 
-      config.inclinoType = j.value( "/inclinomeer/type"_json_pointer, steerConfigDefaults.inclinoType );
-      config.invertRoll = j.value( "/inclinomeer/invertRoll"_json_pointer, steerConfigDefaults.invertRoll );
+    {
+      config.gpioAds131m04Cs = ( SteerConfig::Gpio )(
+        doc["adcimu"]["ads131m04Cs"] | int( steerConfigDefaults.gpioAds131m04Cs ) );
+      config.gpioAds131m04Drdy = ( SteerConfig::Gpio )(
+        doc["adcimu"]["ads131m04Drdy"] | int( steerConfigDefaults.gpioAds131m04Drdy ) );
+      config.gpioAccGyroCs = ( SteerConfig::Gpio )(
+        doc["adcimu"]["accGyroCs"] | int( steerConfigDefaults.gpioAccGyroCs ) );
+      config.gpioAccGyroDrdy = ( SteerConfig::Gpio )(
+        doc["adcimu"]["accGyroDrdy"] | int( steerConfigDefaults.gpioAccGyroDrdy ) );
+      config.gpioMagCs   = ( SteerConfig::Gpio )( doc["adcimu"]["magCs"] |
+                                                int( steerConfigDefaults.gpioMagCs ) );
+      config.gpioMagDrdy = ( SteerConfig::Gpio )(
+        doc["adcimu"]["magDrdy"] | int( steerConfigDefaults.gpioMagDrdy ) );
+    }
 
-      config.mountCorrectionImuRoll = j.value( "/mountingCorrection/roll"_json_pointer, steerConfigDefaults.mountCorrectionImuRoll );
-      config.mountCorrectionImuPitch = j.value( "/mountingCorrection/pitch"_json_pointer, steerConfigDefaults.mountCorrectionImuPitch );
-      config.mountCorrectionImuYaw = j.value( "/mountingCorrection/yaw"_json_pointer, steerConfigDefaults.mountCorrectionImuYaw );
+    {
+      config.ads131m04SampleRate = ( SteerConfig::Ads131m04SampleRate )(
+        doc["filter"]["samplerate"] | int( steerConfigDefaults.ads131m04SampleRate ) );
+      config.filterCutOffFrequencies[0] = doc["filter"]["cutoffFrequency1"] |
+                                          steerConfigDefaults.filterCutOffFrequencies[0];
+      config.filterCutOffFrequencies[1] = doc["filter"]["cutoffFrequency2"] |
+                                          steerConfigDefaults.filterCutOffFrequencies[1];
+      config.filterCutOffFrequencies[2] = doc["filter"]["cutoffFrequency3"] |
+                                          steerConfigDefaults.filterCutOffFrequencies[2];
+      config.filterCutOffFrequencies[3] = doc["filter"]["cutoffFrequency4"] |
+                                          steerConfigDefaults.filterCutOffFrequencies[3];
+    }
 
-      config.canBusEnabled = j.value( "/canBus/enabled"_json_pointer, steerConfigDefaults.canBusEnabled );
-      config.canBusRx = j.value( "/canBus/rxPin"_json_pointer, steerConfigDefaults.canBusRx );
-      config.canBusTx = j.value( "/canBus/txPin"_json_pointer, steerConfigDefaults.canBusTx );
-      config.canBusSpeed = j.value( "/canBus/speed"_json_pointer, steerConfigDefaults.canBusSpeed );
-      config.canBusHitchThreshold = j.value( "/canBus/hitchThreshold"_json_pointer, steerConfigDefaults.canBusHitchThreshold );
-      config.canBusHitchThresholdHysteresis = j.value( "/canBus/hitchThresholdHysteresis"_json_pointer, steerConfigDefaults.canBusHitchThresholdHysteresis );
-      config.canBusRpmThreshold = j.value( "/canBus/rpmThreshold"_json_pointer, steerConfigDefaults.canBusRpmThreshold );
-      config.canBusRpmThresholdHysteresis = j.value( "/canBus/rpmThresholdHysteresis"_json_pointer, steerConfigDefaults.canBusRpmThresholdHysteresis );
+    {
+      config.canBusEnabled = doc["canBus"]["enabled"] | steerConfigDefaults.canBusEnabled;
+      config.canBusRx      = ( SteerConfig::Gpio )( doc["canBus"]["rxPin"] |
+                                               int( steerConfigDefaults.canBusRx ) );
+      config.canBusTx      = ( SteerConfig::Gpio )( doc["canBus"]["txPin"] |
+                                               int( steerConfigDefaults.canBusTx ) );
+      config.canBusSpeed   = ( SteerConfig::CanBusSpeed )(
+        doc["canBus"]["speed"] | int( steerConfigDefaults.canBusSpeed ) );
+      config.canBusHitchThreshold =
+        doc["canBus"]["hitchThreshold"] | steerConfigDefaults.canBusHitchThreshold;
+      config.canBusHitchThresholdHysteresis =
+        doc["canBus"]["hitchThresholdHysteresis"] |
+        steerConfigDefaults.canBusHitchThresholdHysteresis;
+      config.canBusRpmThreshold =
+        doc["canBus"]["rpmThreshold"] | steerConfigDefaults.canBusRpmThreshold;
+      config.canBusRpmThresholdHysteresis =
+        doc["canBus"]["rpmThresholdHysteresis"] |
+        steerConfigDefaults.canBusRpmThresholdHysteresis;
+    }
 
-      config.rtkCorrectionType = j.value( "/gps/correctionSource"_json_pointer, steerConfigDefaults.rtkCorrectionType );
-      {
-        std::string str = j.value( "/gps/ntrip/server"_json_pointer, steerConfigDefaults.rtkCorrectionServer );
-        memcpy( config.rtkCorrectionServer, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionServer ) ) );
-      }
-      config.rtkCorrectionPort = j.value( "/gps/ntrip/port"_json_pointer, steerConfigDefaults.rtkCorrectionPort );
-      {
-        std::string str = j.value( "/gps/ntrip/username"_json_pointer, steerConfigDefaults.rtkCorrectionUsername );
-        memcpy( config.rtkCorrectionUsername, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionUsername ) ) );
-      }
-      {
-        std::string str = j.value( "/gps/ntrip/password"_json_pointer, steerConfigDefaults.rtkCorrectionPassword );
-        memcpy( config.rtkCorrectionPassword, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionPassword ) ) );
-      }
-      {
-        std::string str = j.value( "/gps/ntrip/mountpoint"_json_pointer, steerConfigDefaults.rtkCorrectionMountpoint );
-        memcpy( config.rtkCorrectionMountpoint, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionMountpoint ) ) );
-      }
-      {
-        std::string str = j.value( "/gps/ntrip/NMEAToSend"_json_pointer, steerConfigDefaults.rtkCorrectionNmeaToSend );
-        memcpy( config.rtkCorrectionNmeaToSend, str.c_str(), std::min( str.size(), sizeof( config.rtkCorrectionNmeaToSend ) ) );
-      }
+    {
+      config.rtkCorrectionType = ( SteerConfig::RtkCorrectionType )(
+        doc["gps"]["correctionSource"] | int( steerConfigDefaults.rtkCorrectionType ) );
+      strlcpy( config.rtkCorrectionServer,
+               doc["gps"]["rtkCorrectionServer"] |
+                 steerConfigDefaults.rtkCorrectionServer,
+               sizeof( config.rtkCorrectionServer ) );
+      config.rtkCorrectionPort =
+        doc["gps"]["rtkCorrectionPort"] | steerConfigDefaults.rtkCorrectionPort;
+      strlcpy( config.rtkCorrectionUsername,
+               doc["gps"]["rtkCorrectionUsername"] |
+                 steerConfigDefaults.rtkCorrectionUsername,
+               sizeof( config.rtkCorrectionUsername ) );
+      strlcpy( config.rtkCorrectionPassword,
+               doc["gps"]["rtkCorrectionPassword"] |
+                 steerConfigDefaults.rtkCorrectionPassword,
+               sizeof( config.rtkCorrectionPassword ) );
+      strlcpy( config.rtkCorrectionMountpoint,
+               doc["gps"]["rtkCorrectionMountpoint"] |
+                 steerConfigDefaults.rtkCorrectionMountpoint,
+               sizeof( config.rtkCorrectionMountpoint ) );
+      strlcpy( config.rtkCorrectionNmeaToSend,
+               doc["gps"]["rtkCorrectionNmeaToSend"] |
+                 steerConfigDefaults.rtkCorrectionNmeaToSend,
+               sizeof( config.rtkCorrectionNmeaToSend ) );
+      config.ntripPositionSendIntervall = doc["gps"]["ntripPositionSendIntervall"] |
+                                          steerConfigDefaults.ntripPositionSendIntervall;
+      config.rtkCorrectionBaudrate =
+        doc["gps"]["rtkCorrectionBaudrate"] | steerConfigDefaults.rtkCorrectionBaudrate;
+      config.sendNmeaDataTo = ( SteerConfig::SendNmeaDataTo )(
+        doc["gps"]["sendNmeaDataTo"] | int( steerConfigDefaults.sendNmeaDataTo ) );
+      config.sendNmeaDataTcpPort =
+        doc["gps"]["sendNmeaDataTcpPort"] | steerConfigDefaults.sendNmeaDataTcpPort;
+      config.sendNmeaDataUdpPort =
+        doc["gps"]["sendNmeaDataUdpPort"] | steerConfigDefaults.sendNmeaDataUdpPort;
+      config.sendNmeaDataUdpPortFrom = doc["gps"]["sendNmeaDataUdpPortFrom"] |
+                                       steerConfigDefaults.sendNmeaDataUdpPortFrom;
+    }
 
-      config.ntripPositionSendIntervall = j.value( "/gps/ntrip/intervalSendPosition"_json_pointer, steerConfigDefaults.ntripPositionSendIntervall );
-      config.rtkCorrectionBaudrate = j.value( "/gps/baudrate"_json_pointer, steerConfigDefaults.rtkCorrectionBaudrate );
-      config.sendNmeaDataTo = j.value( "/gps/outputTo"_json_pointer, steerConfigDefaults.sendNmeaDataTo );
-      config.sendNmeaDataTcpPort = j.value( "/gps/tcpPort"_json_pointer, steerConfigDefaults.sendNmeaDataTcpPort );
-      config.sendNmeaDataUdpPort = j.value( "/gps/sendNmeaDataUdpPort"_json_pointer, steerConfigDefaults.sendNmeaDataUdpPort );
-      config.sendNmeaDataUdpPortFrom = j.value( "/gps/sendNmeaDataUdpPortFrom"_json_pointer, steerConfigDefaults.sendNmeaDataUdpPortFrom );
+    {
+      config.baudrate  = doc["connection"]["baudrate"] | steerConfigDefaults.baudrate;
+      config.enableOTA = doc["connection"]["enableOTA"] | steerConfigDefaults.enableOTA;
+      config.mode      = ( SteerConfig::Mode )( doc["connection"]["mode"] |
+                                           int( steerConfigDefaults.mode ) );
+      config.aogPortSendFrom =
+        doc["connection"]["aogPortSendFrom"] | steerConfigDefaults.aogPortSendFrom;
+      config.aogPortListenTo =
+        doc["connection"]["aogPortListenTo"] | steerConfigDefaults.aogPortListenTo;
+      config.aogPortSendTo =
+        doc["connection"]["aogPortSendTo"] | steerConfigDefaults.aogPortSendTo;
+      config.qogPortListenTo =
+        doc["connection"]["qogPortListenTo"] | steerConfigDefaults.qogPortListenTo;
+      config.qogPortSendTo =
+        doc["connection"]["qogPortSendTo"] | steerConfigDefaults.qogPortSendTo;
+    }
 
-      config.baudrate = j.value( "/connection/baudrate"_json_pointer, steerConfigDefaults.baudrate );
-      config.enableOTA = j.value( "/connection/enableOTA"_json_pointer, steerConfigDefaults.enableOTA );
-
-      config.mode = j.value( "/connection/mode"_json_pointer, steerConfigDefaults.mode );
-      config.aogPortSendFrom = j.value( "/connection/aog/sendFrom"_json_pointer, steerConfigDefaults.aogPortSendFrom );
-      config.aogPortListenTo = j.value( "/connection/aog/listenTo"_json_pointer, steerConfigDefaults.aogPortListenTo );
-      config.aogPortSendTo = j.value( "/connection/aog/sendTo"_json_pointer, steerConfigDefaults.aogPortSendTo );
-
-      config.qogPortListenTo = j.value( "/connection/qog/listenTo"_json_pointer, steerConfigDefaults.qogPortListenTo );
-      config.qogPortSendTo = j.value( "/connection/qog/sendTo"_json_pointer, steerConfigDefaults.qogPortSendTo );
-
-      config.qogChannelIdWorkswitch = j.value( "/connection/qog/channelId/Workswitch"_json_pointer, steerConfigDefaults.qogChannelIdWorkswitch );
-      config.qogChannelIdSteerswitch = j.value( "/connection/qog/channelId/Steerswitch"_json_pointer, steerConfigDefaults.qogChannelIdSteerswitch );
-      config.qogChannelIdWheelAngle = j.value( "/connection/qog/channelId/WheelAngle"_json_pointer, steerConfigDefaults.qogChannelIdWheelAngle );
-      config.qogChannelIdSetpointSteerAngle = j.value( "/connection/qog/channelId/SetpointSteerAngle"_json_pointer, steerConfigDefaults.qogChannelIdSetpointSteerAngle );
-      config.qogChannelIdOrientation = j.value( "/connection/qog/channelId/Orientation"_json_pointer, steerConfigDefaults.qogChannelIdOrientation );
-      config.qogChannelIdGpsDataIn = j.value( "/connection/qog/channelId/GpsDataIn"_json_pointer, steerConfigDefaults.qogChannelIdGpsDataIn );
-      config.qogChannelIdGpsDataOut = j.value( "/connection/qog/channelId/GpsDataOut"_json_pointer, steerConfigDefaults.qogChannelIdGpsDataOut );
-      config.qogChannelIdCanRearHitch = j.value( "/connection/qog/channelId/CanRearHitch"_json_pointer, steerConfigDefaults.qogChannelIdCanRearHitch );
-      config.qogChannelIdCanFrontHitch = j.value( "/connection/qog/channelId/CanFrontHitch"_json_pointer, steerConfigDefaults.qogChannelIdCanFrontHitch );
-      config.qogChannelIdCanRearPtoRpm = j.value( "/connection/qog/channelId/CanRearPtoRpm"_json_pointer, steerConfigDefaults.qogChannelIdCanRearPtoRpm );
-      config.qogChannelIdCanFrontPtoRpm = j.value( "/connection/qog/channelId/CanFrontPtoRpm"_json_pointer, steerConfigDefaults.qogChannelIdCanFrontPtoRpm );
-      config.qogChannelIdCanMotorRpm = j.value( "/connection/qog/channelId/CanMotorRpm"_json_pointer, steerConfigDefaults.qogChannelIdCanMotorRpm );
-
-    } catch( json::exception& e ) {
-      // output exception information
-      Serial.print( "message: " );
-      Serial.println( e.what() );
-      Serial.print( "exception id: " );
-      Serial.println( e.id );
-      Serial.flush();
+    {
+      config.qogChannelIdWorkswitch =
+        doc["channelId"]["Workswitch"] | steerConfigDefaults.qogChannelIdWorkswitch;
+      config.qogChannelIdSteerswitch =
+        doc["channelId"]["Steerswitch"] | steerConfigDefaults.qogChannelIdSteerswitch;
+      config.qogChannelIdWheelAngle =
+        doc["channelId"]["WheelAngle"] | steerConfigDefaults.qogChannelIdWheelAngle;
+      config.qogChannelIdSetpointSteerAngle =
+        doc["channelId"]["SetpointSteerAngle"] |
+        steerConfigDefaults.qogChannelIdSetpointSteerAngle;
+      config.qogChannelIdOrientation =
+        doc["channelId"]["Orientation"] | steerConfigDefaults.qogChannelIdOrientation;
+      config.qogChannelIdGpsDataIn =
+        doc["channelId"]["GpsDataIn"] | steerConfigDefaults.qogChannelIdGpsDataIn;
+      config.qogChannelIdGpsDataOut =
+        doc["channelId"]["GpsDataOut"] | steerConfigDefaults.qogChannelIdGpsDataOut;
+      config.qogChannelIdCanRearHitch =
+        doc["channelId"]["CanRearHitch"] | steerConfigDefaults.qogChannelIdCanRearHitch;
+      config.qogChannelIdCanFrontHitch =
+        doc["channelId"]["CanFrontHitch"] | steerConfigDefaults.qogChannelIdCanFrontHitch;
+      config.qogChannelIdCanRearPtoRpm =
+        doc["channelId"]["CanRearPtoRpm"] | steerConfigDefaults.qogChannelIdCanRearPtoRpm;
+      config.qogChannelIdCanFrontPtoRpm = doc["channelId"]["CanFrontPtoRpm"] |
+                                          steerConfigDefaults.qogChannelIdCanFrontPtoRpm;
+      config.qogChannelIdCanMotorRpm =
+        doc["channelId"]["CanMotorRpm"] | steerConfigDefaults.qogChannelIdCanMotorRpm;
     }
   }
 }
 
-void sendBase64DataTransmission( uint16_t channelId, const char* data, size_t len ) {
-  json j;
-  j["channelId"] = channelId;
+void
+sendDataTransmission( const uint16_t channelId, const char* data, const size_t len ) {
+  std::vector< uint8_t > buffer;
+  buffer.reserve( len + 20 );
 
-  size_t outputLength;
-  char* encoded = ( char* )base64_encode( ( const unsigned char* )data, len, &outputLength );
+  std::vector< uint8_t > vector( data, data + len );
 
-  if( encoded ) {
-    j["data"] = std::string( encoded, outputLength );
-    free( encoded );
+  CborLite::encodeMapSize( buffer, uint8_t( 2 ) );
+  CborLite::encodeText( buffer, std::string( "cid" ) );
+  CborLite::encodeUnsigned( buffer, channelId );
+  CborLite::encodeText( buffer, std::string( "d" ) );
+  CborLite::encodeBytes( buffer, vector );
 
-    std::vector<std::uint8_t> cbor = json::to_cbor( j );
-    udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
-  }
-}
-
-void sendStateTransmission( uint16_t channelId, bool state ) {
-  json j;
-  j["channelId"] = channelId;
-  j["state"] = state;
-
-  std::vector<std::uint8_t> cbor = json::to_cbor( j );
-  udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
-}
-
-void sendNumberTransmission( uint16_t channelId, double number ) {
-  json j;
-  j["channelId"] = channelId;
-  j["number"] = number;
-
-  std::vector<std::uint8_t> cbor = json::to_cbor( j );
-  udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
-}
-
-void sendQuaternionTransmission( uint16_t channelId, imu::Quaternion quaterion ) {
-  json j;
-  j["channelId"] = channelId;
-  j["x"] = quaterion.x();
-  j["y"] = quaterion.y();
-  j["z"] = quaterion.z();
-  j["w"] = quaterion.w();
-
-  std::vector<std::uint8_t> cbor = json::to_cbor( j );
-  udpSendFrom.broadcastTo( cbor.data(), cbor.size(), initialisation.portSendTo );
-}
-
-void parseJsonToFxos8700Fxas21002Calibration( json& config, Fxos8700Fxas21002CalibrationData& calibration ) {
-  if( config.is_object() ) {
-    try {
-      calibration.mag_offsets[0] = config.value( "/Fxos8700Fxas21002Calibration/mag_offsets/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_offsets[0] );
-      calibration.mag_offsets[1] = config.value( "/Fxos8700Fxas21002Calibration/mag_offsets/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_offsets[1] );
-      calibration.mag_offsets[2] = config.value( "/Fxos8700Fxas21002Calibration/mag_offsets/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_offsets[2] );
-      calibration.mag_softiron_matrix[0][0] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/0/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[0][0] );
-      calibration.mag_softiron_matrix[0][1] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/0/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[0][1] );
-      calibration.mag_softiron_matrix[0][2] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/0/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[0][2] );
-      calibration.mag_softiron_matrix[1][0] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/1/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[1][0] );
-      calibration.mag_softiron_matrix[1][1] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/1/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[1][1] );
-      calibration.mag_softiron_matrix[1][2] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/1/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[1][2] );
-      calibration.mag_softiron_matrix[2][0] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/2/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[2][0] );
-      calibration.mag_softiron_matrix[2][1] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/2/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[2][1] );
-      calibration.mag_softiron_matrix[2][2] = config.value( "/Fxos8700Fxas21002Calibration/mag_softiron_matrix/2/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_softiron_matrix[2][2] );
-      calibration.mag_field_strength = config.value( "/Fxos8700Fxas21002Calibration/mag_field_strength"_json_pointer, fxos8700Fxas21002CalibrationDefault.mag_field_strength );
-      calibration.gyro_zero_offsets[0] = config.value( "/Fxos8700Fxas21002Calibration/gyro_zero_offsets/0"_json_pointer, fxos8700Fxas21002CalibrationDefault.gyro_zero_offsets[0] );
-      calibration.gyro_zero_offsets[1] = config.value( "/Fxos8700Fxas21002Calibration/gyro_zero_offsets/1"_json_pointer, fxos8700Fxas21002CalibrationDefault.gyro_zero_offsets[1] );
-      calibration.gyro_zero_offsets[2] = config.value( "/Fxos8700Fxas21002Calibration/gyro_zero_offsets/2"_json_pointer, fxos8700Fxas21002CalibrationDefault.gyro_zero_offsets[2] );
-    } catch( json::exception& e ) {
-      // output exception information
-      Serial.print( "message: " );
-      Serial.println( e.what() );
-      Serial.print( "exception id: " );
-      Serial.println( e.id );
-    }
-  }
-}
-
-json parseFxos8700Fxas21002CalibrationToJson( Fxos8700Fxas21002CalibrationData& calibration ) {
-  json j;
-
-  j["Fxos8700Fxas21002Calibration"]["mag_offsets"][0] = calibration.mag_offsets[0];
-  j["Fxos8700Fxas21002Calibration"]["mag_offsets"][1] = calibration.mag_offsets[1];
-  j["Fxos8700Fxas21002Calibration"]["mag_offsets"][2] = calibration.mag_offsets[2];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][0][0] = calibration.mag_softiron_matrix[0][0];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][0][1] = calibration.mag_softiron_matrix[0][1];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][0][2] = calibration.mag_softiron_matrix[0][2];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][1][0] = calibration.mag_softiron_matrix[1][0];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][1][1] = calibration.mag_softiron_matrix[1][1];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][1][2] = calibration.mag_softiron_matrix[1][2];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][2][0] = calibration.mag_softiron_matrix[2][0];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][2][1] = calibration.mag_softiron_matrix[2][1];
-  j["Fxos8700Fxas21002Calibration"]["mag_softiron_matrix"][2][2] = calibration.mag_softiron_matrix[2][2];
-  j["Fxos8700Fxas21002Calibration"]["mag_field_strength"] = calibration.mag_field_strength;
-  j["Fxos8700Fxas21002Calibration"]["gyro_zero_offsets"][0] = calibration.gyro_zero_offsets[0];
-  j["Fxos8700Fxas21002Calibration"]["gyro_zero_offsets"][1] = calibration.gyro_zero_offsets[1];
-  j["Fxos8700Fxas21002Calibration"]["gyro_zero_offsets"][2] = calibration.gyro_zero_offsets[2];
-
-  return j;
+  udpSendFrom.broadcastTo( buffer.data(), buffer.size(), steerConfig.qogPortSendTo );
 }

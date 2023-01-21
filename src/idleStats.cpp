@@ -9,8 +9,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -21,39 +21,42 @@
 // SOFTWARE.
 
 #include <ESPUI.h>
+
 #include "esp_freertos_hooks.h"
 #include "esp_heap_caps.h"
-
 #include "main.hpp"
 
 volatile uint16_t idleCtrCore0 = 0;
 volatile uint16_t idleCtrCore1 = 0;
 
-bool core0IdleWorker( void ) {
+bool
+core0IdleWorker( void ) {
   static TickType_t xLastWakeTime0;
 
   if( xLastWakeTime0 != xTaskGetTickCount() ) {
     xLastWakeTime0 = xTaskGetTickCount();
-    idleCtrCore0++;
+    ++idleCtrCore0;
   }
 
   return true;
 }
 
-bool core1IdleWorker( void ) {
+bool
+core1IdleWorker( void ) {
   static TickType_t xLastWakeTime1;
 
   if( xLastWakeTime1 != xTaskGetTickCount() ) {
     xLastWakeTime1 = xTaskGetTickCount();
-    idleCtrCore1++;
+    ++idleCtrCore1;
   }
 
   return true;
 }
 
-void idleStatsWorker( void* z ) {
-  constexpr TickType_t xFrequency = 1000;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
+void
+idleStatsWorker( void* z ) {
+  constexpr TickType_t xFrequency    = 1000;
+  TickType_t           xLastWakeTime = xTaskGetTickCount();
 
   String str;
   str.reserve( 500 );
@@ -65,9 +68,11 @@ void idleStatsWorker( void* z ) {
 
     str = "Core0: ";
     str += 1000 - idleCtrCore0;
+    idleCtrCore0 = 0;
     str += "‰<br/>";
     str += "Core1: ";
     str += 1000 - idleCtrCore1;
+    idleCtrCore1 = 0;
     str += "‰<br/>Uptime: ";
     str += millis() / 1000;
     str += "s<br/>Heap free: ";
@@ -84,22 +89,24 @@ void idleStatsWorker( void* z ) {
     str += heapInfo.largest_free_block / 1024;
     str += "kB";
 
-    Control* labelLoadHandle = ESPUI.getControl( labelLoad );
-    labelLoadHandle->value = str;
-    ESPUI.updateControlAsync( labelLoadHandle );
+    labelLoad->value = str;
+    ESPUI.updateControlAsync( labelLoad );
 
-    idleCtrCore0 = 0;
-    idleCtrCore1 = 0;
+    // char runtimeStats[ 400 ];
+    // vTaskGetRunTimeStats( runtimeStats );
+    // labelStatusRtos->value = runtimeStats;
+    // ESPUI.updateControlAsync( labelStatusRtos );
 
     ESPUI.updateControlAsyncTransmit();
 
-//   heap_caps_print_heap_info(MALLOC_CAP_8BIT);
+    // heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
 }
 
-void initIdleStats() {
+void
+initIdleStats() {
   esp_register_freertos_idle_hook_for_cpu( core0IdleWorker, 0 );
   esp_register_freertos_idle_hook_for_cpu( core1IdleWorker, 1 );
   xTaskCreate( idleStatsWorker, "IdleStats", 2048, NULL, 10, NULL );
